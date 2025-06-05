@@ -783,9 +783,9 @@ Apache License 2.0 - see [LICENSE](LICENSE) file for details.
 ## 🆘 Support
 
 - 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/yourusername/openai-inference-proxy/issues)
-- 💬 [Discussions](https://github.com/yourusername/openai-inference-proxy/discussions)
-- 📧 Email: support@example.com
+- 🐛 [Issue Tracker](https://github.com/amotivv-inc/openai-inference-proxy/issues)
+- 💬 [Discussions](https://github.com/amotivv-inc/openai-inference-proxy/discussions)
+- 📧 Email: ai@amotivv.com
 
 ## 🙏 Acknowledgments
 
