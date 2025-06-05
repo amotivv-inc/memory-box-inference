@@ -1,0 +1,135 @@
+"""SQLAlchemy database models"""
+
+from sqlalchemy import (
+    Column, String, Boolean, Integer, DateTime, ForeignKey, 
+    Text, DECIMAL, CheckConstraint, UniqueConstraint, JSON
+)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+import uuid
+
+Base = declarative_base()
+
+
+class Organization(Base):
+    """Organizations that own API keys"""
+    __tablename__ = "organizations"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    api_keys = relationship("APIKey", back_populates="organization", cascade="all, delete-orphan")
+    users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
+
+
+class APIKey(Base):
+    """Mapping between synthetic and real OpenAI API keys"""
+    __tablename__ = "api_keys"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # New field
+    synthetic_key = Column(String(255), unique=True, nullable=False, index=True)
+    openai_api_key = Column(Text, nullable=False)  # Encrypted
+    is_active = Column(Boolean, default=True)
+    name = Column(String(255), nullable=True)  # Optional name for the key
+    description = Column(Text, nullable=True)  # Optional description
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="api_keys")
+    user = relationship("User", back_populates="api_keys")  # New relationship
+    requests = relationship("Request", back_populates="api_key")
+
+
+class User(Base):
+    """Users within organizations"""
+    __tablename__ = "users"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    user_id = Column(String(255), nullable=False)  # External user ID
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="users")
+    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
+    requests = relationship("Request", back_populates="user")
+    api_keys = relationship("APIKey", back_populates="user")
+    
+    # Constraints
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'user_id', name='_org_user_uc'),
+    )
+
+
+class Session(Base):
+    """User sessions for grouping requests"""
+    __tablename__ = "sessions"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    session_id = Column(String(255), unique=True, nullable=False, index=True)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="sessions")
+    requests = relationship("Request", back_populates="session", cascade="all, delete-orphan")
+
+
+class Request(Base):
+    """Individual API requests"""
+    __tablename__ = "requests"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    request_id = Column(String(255), unique=True, nullable=False, index=True)
+    response_id = Column(String(255), nullable=True, index=True)  # OpenAI's response ID
+    session_id = Column(UUID(as_uuid=True), ForeignKey("sessions.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id"), nullable=False)
+    model = Column(String(100), nullable=False)
+    request_payload = Column(JSON, nullable=False)
+    response_payload = Column(JSON, nullable=True)
+    status = Column(String(50), nullable=False)  # pending, completed, failed
+    error_message = Column(Text, nullable=True)
+    rating = Column(Integer, nullable=True)
+    rating_timestamp = Column(DateTime(timezone=True), nullable=True)
+    rating_feedback = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    session = relationship("Session", back_populates="requests")
+    user = relationship("User", back_populates="requests")
+    api_key = relationship("APIKey", back_populates="requests")
+    usage_logs = relationship("UsageLog", back_populates="request", cascade="all, delete-orphan")
+    
+    # Constraints
+    __table_args__ = (
+        CheckConstraint('rating IN (-1, 0, 1)', name='check_rating_values'),
+    )
+
+
+class UsageLog(Base):
+    """Token usage and cost tracking"""
+    __tablename__ = "usage_logs"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    request_id = Column(UUID(as_uuid=True), ForeignKey("requests.id"), nullable=False)
+    input_tokens = Column(Integer, nullable=True)
+    output_tokens = Column(Integer, nullable=True)
+    reasoning_tokens = Column(Integer, nullable=True)
+    total_tokens = Column(Integer, nullable=True)
+    model = Column(String(100), nullable=True)
+    cost_usd = Column(DECIMAL(10, 6), nullable=True)
+    logged_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    request = relationship("Request", back_populates="usage_logs")

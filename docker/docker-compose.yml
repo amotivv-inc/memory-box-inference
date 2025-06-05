@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: openai-inference-proxy-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-proxyuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-proxypass}
+      POSTGRES_DB: ${POSTGRES_DB:-openai_proxy}
+    ports:
+      - "5433:5432"
+    volumes:
+      - openai_inference_proxy_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proxyuser -d openai_proxy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - proxy-network
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: openai-proxy-api
+    environment:
+      DOCKER_ENV: "true"
+      DATABASE_URL: "postgresql+asyncpg://proxyuser:proxypass@postgres:5432/openai_proxy"
+      JWT_SECRET_KEY: 9HSuqTOuL7_FhylZ1VnFQQu8LzG29spSZIIQJGLxl4g
+      ENCRYPTION_KEY: JuWakl1Lgx_qviSm9Ru7O9rGfhIo2euNKtyd4cHv3M4=
+      OPENAI_API_BASE_URL: https://api.openai.com/v1
+      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:8080"]'
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../scripts:/app/scripts:ro
+    networks:
+      - proxy-network
+    restart: unless-stopped
+
+volumes:
+  openai_inference_proxy_postgres_data:
+
+networks:
+  proxy-network:
+    driver: bridge
