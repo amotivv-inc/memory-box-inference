@@ -31,19 +31,35 @@ flowchart TD
     classDef database fill:#f0f0f0,stroke:#666666,stroke-width:2px
     classDef openai fill:#f0fff0,stroke:#006600,stroke-width:2px
     
-    clients[Client Applications\nWeb, Mobile, Desktop]:::clients
+    clients["Client Applications
+    Web, Mobile, Desktop"]:::clients
     
-    proxy[OpenAI Inference Proxy]:::proxy
+    proxy["OpenAI Inference Proxy"]:::proxy
     
-    auth[Authentication & Authorization\n• JWT validation\n• Organization verification\n• User identification]:::proxyComponents
-    keyMgmt[API Key Management\n• User-scoped keys\n• Organization-wide keys\n• Encrypted storage]:::proxyComponents
-    reqProc[Request Processing\n• Session management\n• Usage tracking\n• Cost calculation\n• Response streaming]:::proxyComponents
+    auth["Authentication & Authorization
+    • JWT validation
+    • Organization verification
+    • User identification"]:::proxyComponents
     
-    db[PostgreSQL Database\n• Organizations • API Keys\n• Users • Sessions\n• Requests • Usage Logs]:::database
+    keyMgmt["API Key Management
+    • User-scoped keys
+    • Organization-wide keys
+    • Encrypted storage"]:::proxyComponents
     
-    oai[OpenAI API]:::openai
+    reqProc["Request Processing
+    • Session management
+    • Usage tracking
+    • Cost calculation
+    • Response streaming"]:::proxyComponents
     
-    clients -- HTTPS + JWT Auth --> proxy
+    db["PostgreSQL Database
+    • Organizations • API Keys
+    • Users • Sessions
+    • Requests • Usage Logs"]:::database
+    
+    oai["OpenAI API"]:::openai
+    
+    clients -- "HTTPS + JWT Auth" --> proxy
     proxy --> auth
     proxy --> keyMgmt
     proxy --> reqProc
