@@ -40,7 +40,7 @@ docker-compose -f docker/docker-compose.yml up -d
 Run the test suite before submitting:
 
 ```bash
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 ```
 
 ## Pull Request Guidelines

@@ -71,7 +71,7 @@ This tests:
 For full API testing including user-scoped keys:
 
 ```bash
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 ```
 
 This includes all user-scoped API key tests as part of the complete test suite.

@@ -201,14 +201,11 @@ Save the JWT token for authentication.
 Use the comprehensive test script to verify that all endpoints are working:
 
 ```bash
-# Make the test script executable
-chmod +x tests/test_all_endpoints.sh
-
 # Run the test script (it will create its own test organization)
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 
 # Or run with a custom OpenAI API key
-TEST_OPENAI_KEY="sk-your-test-key" ./tests/test_all_endpoints.sh
+TEST_OPENAI_KEY="sk-your-test-key" python tests/openai_proxy_test.py
 ```
 
 The test script will:

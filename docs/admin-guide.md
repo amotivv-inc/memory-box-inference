@@ -269,7 +269,7 @@ Run the full test suite to verify all endpoints:
 exit
 
 # Run the comprehensive test script
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 ```
 
 This will test:

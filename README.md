@@ -23,48 +23,36 @@ This proxy acts as an intelligent intermediary between your applications and Ope
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────┐
-│            Client Applications              │
-│         (Web, Mobile, Desktop)              │
-└─────────────────┬───────────────────────────┘
-                  │ HTTPS + JWT Auth
-┌─────────────────┴───────────────────────────┐
-│         OpenAI Inference Proxy              │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │   Authentication & Authorization     │   │
-│  │  • JWT validation                    │   │
-│  │  • Organization verification         │   │
-│  │  • User identification              │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │      API Key Management             │   │
-│  │  • User-scoped keys                 │   │
-│  │  • Organization-wide keys           │   │
-│  │  • Encrypted storage                │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │    Request Processing               │   │
-│  │  • Session management               │   │
-│  │  • Usage tracking                   │   │
-│  │  • Cost calculation                 │   │
-│  │  • Response streaming               │   │
-│  └─────────────────────────────────────┘   │
-└─────────────────┬───────────────────────────┘
-                  │
-┌─────────────────┴───────────────────────────┐
-│           PostgreSQL Database               │
-│  • Organizations  • API Keys                │
-│  • Users         • Sessions                 │
-│  • Requests      • Usage Logs               │
-└─────────────────┬───────────────────────────┘
-                  │
-┌─────────────────┴───────────────────────────┐
-│              OpenAI API                     │
-└─────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    classDef clients fill:#f9f9f9,stroke:#333,stroke-width:2px
+    classDef proxy fill:#e6f7ff,stroke:#0066cc,stroke-width:2px
+    classDef proxyComponents fill:#cceeff,stroke:#0066cc,stroke-width:1px
+    classDef database fill:#f0f0f0,stroke:#666666,stroke-width:2px
+    classDef openai fill:#f0fff0,stroke:#006600,stroke-width:2px
+    
+    clients[Client Applications\nWeb, Mobile, Desktop]:::clients
+    
+    proxy[OpenAI Inference Proxy]:::proxy
+    
+    auth[Authentication & Authorization\n• JWT validation\n• Organization verification\n• User identification]:::proxyComponents
+    keyMgmt[API Key Management\n• User-scoped keys\n• Organization-wide keys\n• Encrypted storage]:::proxyComponents
+    reqProc[Request Processing\n• Session management\n• Usage tracking\n• Cost calculation\n• Response streaming]:::proxyComponents
+    
+    db[PostgreSQL Database\n• Organizations • API Keys\n• Users • Sessions\n• Requests • Usage Logs]:::database
+    
+    oai[OpenAI API]:::openai
+    
+    clients -- HTTPS + JWT Auth --> proxy
+    proxy --> auth
+    proxy --> keyMgmt
+    proxy --> reqProc
+    proxy --> db
+    db --> oai
+    
+    %% Add relationship labels and styling
+    linkStyle 0 stroke:#0066cc,stroke-width:2px
+    linkStyle 4 stroke:#006600,stroke-width:2px
 ```
 
 ## ✨ Features
@@ -574,14 +562,63 @@ This allows for:
 
 ### Key Relationships
 
-```
-organizations
-    ├── users (1:many)
-    ├── api_keys (1:many)
-    │   └── user_id (optional, for user-scoped keys)
-    └── sessions (1:many via users)
-        └── requests (1:many)
-            └── usage_logs (1:1)
+```mermaid
+erDiagram
+    organizations ||--o{ users : contains
+    organizations ||--o{ api_keys : has
+    users ||--o{ sessions : creates
+    users ||--o{ api_keys : owns
+    sessions ||--o{ requests : groups
+    requests ||--|| usage_logs : tracks
+    
+    organizations {
+        uuid id
+        string name
+        timestamp created_at
+    }
+    
+    users {
+        uuid id
+        string user_id
+        uuid organization_id
+        timestamp created_at
+    }
+    
+    api_keys {
+        uuid id
+        uuid organization_id
+        uuid user_id
+        string encrypted_key
+        boolean active
+        timestamp created_at
+    }
+    
+    sessions {
+        uuid id
+        uuid user_id
+        string session_id
+        timestamp created_at
+    }
+    
+    requests {
+        uuid id
+        uuid session_id
+        string request_id
+        string response_id
+        jsonb content
+        int rating
+        timestamp created_at
+    }
+    
+    usage_logs {
+        uuid id
+        uuid request_id
+        int prompt_tokens
+        int completion_tokens
+        int total_tokens
+        float total_cost
+        timestamp created_at
+    }
 ```
 
 ## 🚀 Deployment

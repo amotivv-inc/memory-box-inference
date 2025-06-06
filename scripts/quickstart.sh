@@ -168,7 +168,7 @@ echo "2. View the API documentation:"
 echo -e "   ${BLUE}http://localhost:8000/docs${NC}"
 echo
 echo "3. Run the test suite:"
-echo -e "   ${YELLOW}./tests/test_all_endpoints.sh${NC}"
+echo -e "   ${YELLOW}python tests/openai_proxy_test.py${NC}"
 echo
 echo "4. Check the Python client example:"
 echo -e "   ${YELLOW}cat examples/client.py${NC}"
