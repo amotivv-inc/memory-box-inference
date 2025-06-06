@@ -23,6 +23,18 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
+# Determine docker compose command (with or without hyphen)
+if command -v docker-compose &> /dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+elif docker compose version &> /dev/null; then
+    DOCKER_COMPOSE="docker compose"
+else
+    echo -e "${RED}Error: Neither docker-compose nor docker compose is available. Please install Docker Compose.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Using Docker Compose command: ${DOCKER_COMPOSE}${NC}"
+
 # Step 1: Set up .env file
 echo -e "${YELLOW}Step 1: Setting up environment${NC}"
 if [ ! -f .env ]; then
@@ -32,6 +44,26 @@ if [ ! -f .env ]; then
 else
     echo -e "${GREEN}✓ .env file already exists${NC}"
 fi
+
+# Update DATABASE_URL to use Docker container
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i '' "s|postgresql+asyncpg://user:password@localhost:5432/openai_proxy|postgresql+asyncpg://proxyuser:proxypass@postgres:5432/openai_proxy|" .env
+else
+    # Linux
+    sed -i "s|postgresql+asyncpg://user:password@localhost:5432/openai_proxy|postgresql+asyncpg://proxyuser:proxypass@postgres:5432/openai_proxy|" .env
+fi
+echo -e "${GREEN}✓ Updated database URL${NC}"
+
+# Update CORS_ORIGINS to use JSON format
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    sed -i '' 's|CORS_ORIGINS=http://localhost:3000,http://localhost:8080|CORS_ORIGINS=["http://localhost:3000","http://localhost:8080"]|' .env
+else
+    # Linux
+    sed -i 's|CORS_ORIGINS=http://localhost:3000,http://localhost:8080|CORS_ORIGINS=["http://localhost:3000","http://localhost:8080"]|' .env
+fi
+echo -e "${GREEN}✓ Updated CORS format${NC}"
 
 # Step 2: Generate Fernet key if needed
 if grep -q "generate-fernet-key-for-production" .env; then
@@ -70,7 +102,7 @@ fi
 echo
 echo -e "${YELLOW}Step 2: Starting Docker containers${NC}"
 echo "Starting PostgreSQL and API containers..."
-docker-compose -f docker/docker-compose.yml up -d
+$DOCKER_COMPOSE -f docker/docker-compose.yml up -d
 
 # Wait for API to be ready
 echo
@@ -96,7 +128,7 @@ read -p "Enter your organization name: " ORG_NAME
 
 echo "Creating organization..."
 ORG_OUTPUT=$(docker exec openai-proxy-api python scripts/manage_api_keys.py create-org "$ORG_NAME" 2>&1)
-ORG_ID=$(echo "$ORG_OUTPUT" | grep "Organization created with ID:" | awk '{print $5}')
+ORG_ID=$(echo "$ORG_OUTPUT" | grep "ID:" | head -1 | awk '{print $2}')
 
 if [ -n "$ORG_ID" ]; then
     echo -e "${GREEN}✓ Organization created successfully!${NC}"
