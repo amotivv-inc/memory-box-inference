@@ -347,6 +347,58 @@ else:
     print(response.json())
 ```
 
+### Conversation Management
+
+#### Maintaining Context Across Multiple Turns
+
+The OpenAI Responses API supports multi-turn conversations by using the `previous_response_id` field. This proxy passes this field directly to OpenAI, allowing your applications to maintain conversation context:
+
+1. Send your initial request without a `previous_response_id`
+2. Extract the response ID from OpenAI's response (`response.id`)
+3. For follow-up messages, include this ID as `previous_response_id`
+
+#### Example: Multi-turn Conversation
+
+```javascript
+let previousResponseId = null;
+
+async function conversationTurn(userInput) {
+  const response = await fetch('http://localhost:8000/v1/responses', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${JWT_TOKEN}`,
+      'X-User-ID': 'user@example.com',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      input: userInput,
+      // Include previous response ID if we have one
+      ...(previousResponseId && { previous_response_id: previousResponseId })
+    })
+  });
+  
+  const data = await response.json();
+  // Save the response ID for the next turn
+  previousResponseId = data.id;
+  
+  return data.content[0].text;
+}
+
+// Usage example
+async function runConversation() {
+  console.log(await conversationTurn("What is quantum computing?"));
+  console.log(await conversationTurn("Can you explain that in simpler terms?"));
+  console.log(await conversationTurn("What are its practical applications?"));
+}
+```
+
+#### Important Notes
+
+- The proxy's session tracking (`X-Session-ID` header) is separate from conversation context and is used only for analytics.
+- The proxy doesn't automatically manage conversation history - your client application must handle saving and providing `previous_response_id`.
+- Response IDs are also stored in the proxy's database and can be retrieved with the request ID if needed.
+
 ### Rating Responses
 
 Users can rate responses using either the request ID or response ID:
