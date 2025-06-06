@@ -505,7 +505,7 @@ docker exec openai-proxy-api python scripts/manage_api_keys.py deactivate-key <s
 
 ```bash
 # Run all tests
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 ```
 
 This test suite validates:
@@ -624,11 +624,7 @@ organizations
    ```bash
    pip install -r requirements.txt
    ```
-4. **Run Migrations**
-   ```bash
-   alembic upgrade head
-   ```
-5. **Start with Production Server**
+4. **Start with Production Server**
    ```bash
    gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
    ```

@@ -4,7 +4,7 @@ This directory contains comprehensive tests for the OpenAI Inference Proxy API.
 
 ## Test Files
 
-- `test_all_endpoints.sh`: Comprehensive bash script that tests all API endpoints and functionality
+- `openai_proxy_test.py`: Comprehensive Python script that tests all API endpoints and functionality
 
 ## Running Tests
 
@@ -15,13 +15,13 @@ To run the tests, make sure the API is running with Docker:
 docker-compose -f docker/docker-compose.yml up -d
 
 # Run the comprehensive test suite
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 ```
 
 You can also set a custom OpenAI API key for testing:
 
 ```bash
-TEST_OPENAI_KEY="sk-your-test-key" ./tests/test_all_endpoints.sh
+TEST_OPENAI_KEY="sk-your-test-key" python tests/openai_proxy_test.py
 ```
 
 ## Test Coverage
@@ -147,7 +147,7 @@ This test script can be integrated into CI/CD pipelines:
 
 ```bash
 # Exit code 0 on success, non-zero on failure
-./tests/test_all_endpoints.sh
+python tests/openai_proxy_test.py
 
 # Check exit code
 if [ $? -eq 0 ]; then
