@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Health check endpoint with OpenAI connectivity verification
 - Automatic user creation on first request
 - Response ID storage for rating by OpenAI response ID
+- Persona management system with user-scoped access control
+- Persona analytics endpoint with detailed usage metrics
+- Support for large personas (up to 40K tokens)
 
 ### Security
 - Fernet encryption for API keys at rest

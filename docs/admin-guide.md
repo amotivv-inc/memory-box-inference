@@ -9,9 +9,10 @@ This comprehensive guide covers all aspects of managing organizations and API ke
 3. [Managing Organizations](#managing-organizations)
 4. [Managing API Keys](#managing-api-keys)
 5. [Managing Users](#managing-users)
-6. [Generating JWT Tokens](#generating-jwt-tokens)
-7. [Testing the API](#testing-the-api)
-8. [Troubleshooting](#troubleshooting)
+6. [Managing Personas](#managing-personas)
+7. [Generating JWT Tokens](#generating-jwt-tokens)
+8. [Testing the API](#testing-the-api)
+9. [Troubleshooting](#troubleshooting)
 
 ## Initial Deployment
 
@@ -201,6 +202,197 @@ python scripts/manage_users.py delete-user 5e6208ba-c511-46fd-b51b-6993a73b2943
 # User deleted successfully!
 # Organization: Your Organization Name
 # User ID: user123
+```
+
+## Managing Personas
+
+Personas are system prompts that can be used to customize the behavior of the AI. Each persona can be organization-wide or restricted to a specific user.
+
+### Creating a Persona
+
+Personas can be created at two levels:
+
+#### Organization-Wide Persona
+Accessible by any user in the organization:
+
+```bash
+# Create a new persona for an organization
+python scripts/manage_personas.py create-persona <org-id> "Customer Support" "You are a helpful customer support agent..."
+
+# Example with optional parameters:
+python scripts/manage_personas.py create-persona bc88026d-14ec-447c-abf5-c4bb582c5703 \
+  "Technical Support" \
+  "You are a technical support specialist with expertise in our software products. Help users troubleshoot issues and provide clear, step-by-step solutions." \
+  --description "For technical support inquiries"
+
+# Example output:
+# Persona created successfully!
+# Organization: Your Organization Name
+# Name: Technical Support
+# ID: 7f9a815f-576b-f770-777e-cff14a1099e7
+```
+
+#### User-Restricted Persona
+Limited to a specific user:
+
+```bash
+# Create a user-specific persona
+python scripts/manage_personas.py create-persona <org-id> "Personal Assistant" "You are a personal assistant..." --user-id <user-internal-id>
+
+# Example:
+python scripts/manage_personas.py create-persona bc88026d-14ec-447c-abf5-c4bb582c5703 \
+  "Marketing Specialist" \
+  "You are a marketing specialist with expertise in digital marketing, content creation, and campaign analysis. Help create compelling marketing materials and strategies." \
+  --user-id 5e6208ba-c511-46fd-b51b-6993a73b2943 \
+  --description "For marketing team use only"
+```
+
+### Listing Personas
+
+```bash
+# List all personas
+python scripts/manage_personas.py list-personas
+
+# List personas for a specific organization
+python scripts/manage_personas.py list-personas --org-id bc88026d-14ec-447c-abf5-c4bb582c5703
+
+# Example output:
+# Personas for Organization: Your Organization Name (bc88026d-14ec-447c-abf5-c4bb582c5703)
+# --------------------------------------------------------------------------------
+# ID: 7f9a815f-576b-f770-777e-cff14a1099e7
+# Name: Technical Support
+# Description: For technical support inquiries
+# User: None (Organization-wide)
+# Active: True
+# Content Length: 156 characters
+# Created: 2025-06-05 12:20:00.123456
+# --------------------------------------------------------------------------------
+# ID: 8e7b925f-687c-g880-888f-dgg25b2199f8
+# Name: Marketing Specialist
+# Description: For marketing team use only
+# User: user123 (5e6208ba-c511-46fd-b51b-6993a73b2943)
+# Active: True
+# Content Length: 178 characters
+# Created: 2025-06-05 12:25:00.123456
+# --------------------------------------------------------------------------------
+```
+
+### Viewing a Persona
+
+```bash
+# View a specific persona
+python scripts/manage_personas.py get-persona <persona-id>
+
+# Example:
+python scripts/manage_personas.py get-persona 7f9a815f-576b-f770-777e-cff14a1099e7
+
+# Example output:
+# Persona Details:
+# --------------------------------------------------------------------------------
+# ID: 7f9a815f-576b-f770-777e-cff14a1099e7
+# Name: Technical Support
+# Description: For technical support inquiries
+# Organization: Your Organization Name (bc88026d-14ec-447c-abf5-c4bb582c5703)
+# User: None (Organization-wide)
+# Active: True
+# Created: 2025-06-05 12:20:00.123456
+# 
+# Content:
+# You are a technical support specialist with expertise in our software products. 
+# Help users troubleshoot issues and provide clear, step-by-step solutions.
+# --------------------------------------------------------------------------------
+```
+
+### Updating a Persona
+
+```bash
+# Update a persona's content
+python scripts/manage_personas.py update-persona <persona-id> --content "New system prompt content..."
+
+# Update a persona's name or description
+python scripts/manage_personas.py update-persona <persona-id> --name "New Name" --description "New description"
+
+# Example:
+python scripts/manage_personas.py update-persona 7f9a815f-576b-f770-777e-cff14a1099e7 \
+  --content "You are an advanced technical support specialist with deep expertise in our entire software suite. Provide detailed troubleshooting steps, explain technical concepts clearly, and suggest preventative measures to avoid future issues." \
+  --name "Advanced Technical Support" \
+  --description "For complex technical inquiries"
+```
+
+### Deactivating a Persona
+
+```bash
+# Deactivate a persona
+python scripts/manage_personas.py deactivate-persona <persona-id>
+
+# Example:
+python scripts/manage_personas.py deactivate-persona 7f9a815f-576b-f770-777e-cff14a1099e7
+
+# Example output:
+# Persona deactivated successfully: 7f9a815f-576b-f770-777e-cff14a1099e7 (Advanced Technical Support)
+```
+
+### Reactivating a Persona
+
+```bash
+# Reactivate a persona
+python scripts/manage_personas.py activate-persona <persona-id>
+
+# Example:
+python scripts/manage_personas.py activate-persona 7f9a815f-576b-f770-777e-cff14a1099e7
+
+# Example output:
+# Persona activated successfully: 7f9a815f-576b-f770-777e-cff14a1099e7 (Advanced Technical Support)
+```
+
+### Deleting a Persona
+
+```bash
+# Delete a persona permanently
+python scripts/manage_personas.py delete-persona <persona-id>
+
+# Example:
+python scripts/manage_personas.py delete-persona 7f9a815f-576b-f770-777e-cff14a1099e7
+
+# Example output:
+# Persona deleted successfully: 7f9a815f-576b-f770-777e-cff14a1099e7 (Advanced Technical Support)
+```
+
+### Viewing Persona Analytics
+
+```bash
+# View usage analytics for a specific persona
+python scripts/manage_personas.py get-analytics <persona-id>
+
+# Example:
+python scripts/manage_personas.py get-analytics 8e7b925f-687c-g880-888f-dgg25b2199f8
+
+# Example output:
+# Persona Analytics: Marketing Specialist (8e7b925f-687c-g880-888f-dgg25b2199f8)
+# --------------------------------------------------------------------------------
+# Total Requests: 157
+# Success Rate: 98.7%
+# Total Tokens: 245,678
+# Total Cost: $4.92
+# 
+# Top Models:
+# - gpt-4o: 89 requests
+# - gpt-4o-mini: 68 requests
+# 
+# Top Users:
+# - alice@example.com: 78 requests
+# - bob@example.com: 45 requests
+# - charlie@example.com: 34 requests
+# 
+# Daily Usage (Last 7 Days):
+# - 2025-06-05: 23 requests, 34,567 tokens, $0.69
+# - 2025-06-04: 19 requests, 29,876 tokens, $0.60
+# - 2025-06-03: 25 requests, 38,765 tokens, $0.78
+# - 2025-06-02: 18 requests, 27,654 tokens, $0.55
+# - 2025-06-01: 22 requests, 33,456 tokens, $0.67
+# - 2025-05-31: 20 requests, 31,234 tokens, $0.62
+# - 2025-05-30: 30 requests, 50,126 tokens, $1.00
+# --------------------------------------------------------------------------------
 ```
 
 ## Generating JWT Tokens

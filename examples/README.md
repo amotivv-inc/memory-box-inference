@@ -15,6 +15,7 @@ The `client.py` file demonstrates a complete Python client implementation with a
 5. **Error Handling** - Handling 403 (no API key) and other errors
 6. **Session Management** - Automatic session ID tracking
 7. **User-Scoped API Keys** - Understanding how the proxy selects API keys
+8. **Persona Usage** - Using personas (system prompts) in requests
 
 ### Prerequisites
 
@@ -130,6 +131,54 @@ response = await client.create_response(
 response_data = await client.get_response("resp_abc123")
 ```
 
+### Using Personas
+
+The client can be extended to use personas (system prompts) in requests:
+
+```python
+# Using a persona in a request
+response_data, request_id, response_id = await client.create_response(
+    prompt="How can I optimize my website's performance?",
+    model="gpt-4o",
+    persona_id="7f9a815f-576b-f770-777e-cff14a1099e7"  # Technical Support persona
+)
+
+# Creating a new persona
+async def create_persona(client, name, content, description=None):
+    async with httpx.AsyncClient() as http_client:
+        response = await http_client.post(
+            f"{client.base_url}/v1/personas",
+            headers=client.headers,
+            json={
+                "name": name,
+                "content": content,
+                "description": description
+            }
+        )
+        response.raise_for_status()
+        return response.json()
+
+# Listing available personas
+async def list_personas(client):
+    async with httpx.AsyncClient() as http_client:
+        response = await http_client.get(
+            f"{client.base_url}/v1/personas",
+            headers=client.headers
+        )
+        response.raise_for_status()
+        return response.json()
+
+# Getting persona analytics
+async def get_persona_analytics(client, persona_id):
+    async with httpx.AsyncClient() as http_client:
+        response = await http_client.get(
+            f"{client.base_url}/v1/analytics/personas/{persona_id}",
+            headers=client.headers
+        )
+        response.raise_for_status()
+        return response.json()
+```
+
 ### Integration Tips
 
 1. **Store JWT tokens securely** - Don't commit them to version control
@@ -137,6 +186,8 @@ response_data = await client.get_response("resp_abc123")
 3. **Implement retry logic** - For transient network errors
 4. **Monitor usage** - Track token consumption and costs
 5. **Use session IDs** - Group related requests for better tracking
+6. **Leverage personas** - Create specialized personas for different use cases
+7. **Monitor persona performance** - Use analytics to optimize your personas
 
 ## Contributing
 

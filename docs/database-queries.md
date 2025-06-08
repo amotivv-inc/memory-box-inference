@@ -197,6 +197,120 @@ GROUP BY usr.user_id
 ORDER BY total_cost DESC NULLS LAST;
 ```
 
+## Persona Queries
+
+### Basic Persona Information
+
+```sql
+-- View all personas
+SELECT * FROM personas;
+
+-- View personas for a specific organization
+SELECT * FROM personas WHERE organization_id = 'your-org-id';
+
+-- View user-restricted personas
+SELECT p.*, u.user_id as external_user_id 
+FROM personas p 
+JOIN users u ON p.user_id = u.id 
+WHERE p.user_id IS NOT NULL;
+
+-- View active personas
+SELECT * FROM personas WHERE is_active = true;
+```
+
+### Persona Usage Statistics
+
+```sql
+-- View persona usage statistics
+SELECT 
+    p.name as persona_name,
+    COUNT(r.id) as request_count,
+    SUM(ul.total_tokens) as total_tokens,
+    SUM(ul.cost_usd) as total_cost
+FROM personas p
+LEFT JOIN requests r ON p.id = r.persona_id
+LEFT JOIN usage_logs ul ON r.id = ul.request_id
+GROUP BY p.id, p.name
+ORDER BY request_count DESC;
+
+-- View daily usage for a specific persona
+SELECT 
+    DATE(r.created_at) as date,
+    COUNT(r.id) as request_count,
+    COUNT(CASE WHEN r.status = 'completed' THEN 1 END) as success_count,
+    COUNT(CASE WHEN r.status = 'failed' THEN 1 END) as failure_count,
+    SUM(ul.total_tokens) as total_tokens,
+    SUM(ul.cost_usd) as total_cost
+FROM requests r
+LEFT JOIN usage_logs ul ON r.id = ul.request_id
+WHERE r.persona_id = 'your-persona-id'
+GROUP BY DATE(r.created_at)
+ORDER BY date DESC;
+
+-- View model usage for a specific persona
+SELECT 
+    r.model,
+    COUNT(r.id) as request_count
+FROM requests r
+WHERE r.persona_id = 'your-persona-id'
+GROUP BY r.model
+ORDER BY request_count DESC;
+
+-- View top users of a specific persona
+SELECT 
+    u.user_id as external_user_id,
+    COUNT(r.id) as request_count,
+    SUM(ul.total_tokens) as total_tokens,
+    SUM(ul.cost_usd) as total_cost
+FROM requests r
+JOIN sessions s ON r.session_id = s.id
+JOIN users u ON s.user_id = u.id
+LEFT JOIN usage_logs ul ON r.id = ul.request_id
+WHERE r.persona_id = 'your-persona-id'
+GROUP BY u.user_id
+ORDER BY request_count DESC
+LIMIT 10;
+```
+
+### Persona Performance Analysis
+
+```sql
+-- Calculate success rate by persona
+SELECT 
+    p.name as persona_name,
+    COUNT(r.id) as request_count,
+    COUNT(CASE WHEN r.status = 'completed' THEN 1 END) as success_count,
+    COUNT(CASE WHEN r.status = 'failed' THEN 1 END) as failure_count,
+    ROUND(COUNT(CASE WHEN r.status = 'completed' THEN 1 END)::numeric / 
+          NULLIF(COUNT(r.id), 0)::numeric * 100, 1) as success_rate
+FROM personas p
+LEFT JOIN requests r ON p.id = r.persona_id
+GROUP BY p.id, p.name
+ORDER BY request_count DESC;
+
+-- Calculate average rating by persona
+SELECT 
+    p.name as persona_name,
+    COUNT(r.id) as request_count,
+    COUNT(r.rating) as rated_count,
+    AVG(r.rating) as avg_rating
+FROM personas p
+LEFT JOIN requests r ON p.id = r.persona_id
+GROUP BY p.id, p.name
+ORDER BY avg_rating DESC NULLS LAST;
+
+-- Calculate average response time by persona
+SELECT 
+    p.name as persona_name,
+    COUNT(r.id) as request_count,
+    AVG(EXTRACT(EPOCH FROM (r.completed_at - r.created_at))) as avg_response_time_seconds
+FROM personas p
+LEFT JOIN requests r ON p.id = r.persona_id
+WHERE r.completed_at IS NOT NULL
+GROUP BY p.id, p.name
+ORDER BY avg_response_time_seconds ASC;
+```
+
 ## Advanced Performance Analysis
 
 ```sql
