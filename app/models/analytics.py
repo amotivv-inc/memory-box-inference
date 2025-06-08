@@ -219,3 +219,76 @@ class UserUsageResponse(BaseModel):
             }
         }
     }
+
+
+class SessionItem(BaseModel):
+    """Analytics for a single session"""
+    session_id: str = Field(..., description="Unique session identifier", examples=["sess_1234567890abcdef"])
+    user_id: str = Field(..., description="External user ID", examples=["user123"])
+    started_at: datetime = Field(..., description="When the session started", examples=["2025-06-01T12:00:00Z"])
+    ended_at: Optional[datetime] = Field(None, description="When the session ended (null if still active)", examples=["2025-06-01T12:30:00Z"])
+    duration_minutes: Optional[float] = Field(None, description="Session duration in minutes", examples=[30.5])
+    request_count: int = Field(..., description="Number of requests in this session", examples=[15])
+    total_tokens: Optional[int] = Field(None, description="Total tokens used in this session", examples=[5000])
+    total_cost: Optional[float] = Field(None, description="Total cost of this session in USD", examples=[0.25])
+    models_used: List[str] = Field(default_factory=list, description="Models used in this session", examples=[["gpt-4o", "gpt-4o-mini"]])
+    is_active: bool = Field(..., description="Whether the session is still active", examples=[False])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "session_id": "sess_1234567890abcdef",
+                "user_id": "user123",
+                "started_at": "2025-06-01T12:00:00Z",
+                "ended_at": "2025-06-01T12:30:00Z",
+                "duration_minutes": 30.5,
+                "request_count": 15,
+                "total_tokens": 5000,
+                "total_cost": 0.25,
+                "models_used": ["gpt-4o", "gpt-4o-mini"],
+                "is_active": False
+            }
+        }
+    }
+
+
+class SessionsResponse(BaseModel):
+    """Response model for sessions analytics"""
+    sessions: List[SessionItem] = Field(..., description="List of session analytics")
+    total_sessions: int = Field(..., description="Total number of sessions", examples=[100])
+    active_sessions: int = Field(..., description="Number of currently active sessions", examples=[25])
+    total_requests: int = Field(..., description="Total number of requests across all sessions", examples=[1500])
+    total_cost: Optional[float] = Field(None, description="Total cost across all sessions in USD", examples=[25.50])
+    avg_session_duration: Optional[float] = Field(None, description="Average session duration in minutes", examples=[15.3])
+    period_start: Optional[datetime] = Field(None, description="Start of period", examples=["2025-06-01T00:00:00Z"])
+    period_end: Optional[datetime] = Field(None, description="End of period", examples=["2025-06-07T23:59:59Z"])
+    filtered_by_user: Optional[str] = Field(None, description="User ID filter applied", examples=["user123"])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "sessions": [
+                    {
+                        "session_id": "sess_1234567890abcdef",
+                        "user_id": "user123",
+                        "started_at": "2025-06-01T12:00:00Z",
+                        "ended_at": "2025-06-01T12:30:00Z",
+                        "duration_minutes": 30.5,
+                        "request_count": 15,
+                        "total_tokens": 5000,
+                        "total_cost": 0.25,
+                        "models_used": ["gpt-4o", "gpt-4o-mini"],
+                        "is_active": False
+                    }
+                ],
+                "total_sessions": 100,
+                "active_sessions": 25,
+                "total_requests": 1500,
+                "total_cost": 25.50,
+                "avg_session_duration": 15.3,
+                "period_start": "2025-06-01T00:00:00Z",
+                "period_end": "2025-06-07T23:59:59Z",
+                "filtered_by_user": "user123"
+            }
+        }
+    }

@@ -464,3 +464,192 @@ class AnalyticsService:
                 "period_end": end_date,
                 "filtered_by_user": user_id
             }
+    
+    async def get_sessions(
+        self,
+        organization_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        user_id: Optional[str] = None,
+        include_active: bool = True,
+        include_completed: bool = True,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get session analytics for an organization
+        
+        Args:
+            organization_id: Organization ID
+            start_date: Optional start date filter
+            end_date: Optional end date filter
+            user_id: Optional user ID filter
+            include_active: Whether to include active sessions
+            include_completed: Whether to include completed sessions
+            limit: Maximum number of results to return
+            offset: Pagination offset
+            
+        Returns:
+            Dictionary with session analytics data
+        """
+        # Default to last 30 days if no dates provided
+        if not start_date:
+            start_date = datetime.utcnow() - timedelta(days=30)
+        if not end_date:
+            end_date = datetime.utcnow()
+        
+        logger.info(f"Getting sessions for org {organization_id} from {start_date} to {end_date}")
+        
+        try:
+            # Build query parameters
+            params = {
+                "org_id": organization_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "limit": limit,
+                "offset": offset
+            }
+            
+            # Add user filter if provided
+            user_filter = ""
+            if user_id is not None:
+                user_filter = "AND u.user_id = :user_id"
+                params["user_id"] = user_id
+            
+            # Add session status filter
+            status_conditions = []
+            if include_active:
+                status_conditions.append("s.ended_at IS NULL")
+            if include_completed:
+                status_conditions.append("s.ended_at IS NOT NULL")
+            
+            status_filter = ""
+            if status_conditions:
+                status_filter = f"AND ({' OR '.join(status_conditions)})"
+            
+            # Build query for sessions
+            sessions_query = f"""
+            SELECT 
+                s.session_id,
+                u.user_id as external_user_id,
+                s.started_at,
+                s.ended_at,
+                CASE 
+                    WHEN s.ended_at IS NOT NULL THEN 
+                        EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) / 60.0
+                    ELSE 
+                        EXTRACT(EPOCH FROM (NOW() - s.started_at)) / 60.0
+                END as duration_minutes,
+                COUNT(r.id) as request_count,
+                SUM(ul.total_tokens) as total_tokens,
+                SUM(ul.cost_usd) as total_cost,
+                array_agg(DISTINCT r.model) FILTER (WHERE r.model IS NOT NULL) as models_used,
+                CASE WHEN s.ended_at IS NULL THEN TRUE ELSE FALSE END as is_active
+            FROM 
+                sessions s
+            JOIN 
+                users u ON s.user_id = u.id
+            LEFT JOIN 
+                requests r ON s.id = r.session_id
+            LEFT JOIN 
+                usage_logs ul ON r.id = ul.request_id
+            WHERE 
+                u.organization_id = :org_id
+                AND s.started_at BETWEEN :start_date AND :end_date
+                {user_filter}
+                {status_filter}
+            GROUP BY 
+                s.id, s.session_id, u.user_id, s.started_at, s.ended_at
+            ORDER BY 
+                s.started_at DESC
+            LIMIT :limit OFFSET :offset
+            """
+            
+            # Execute query
+            sessions_result = await self.db.execute(text(sessions_query), params)
+            session_rows = sessions_result.fetchall()
+            
+            # Get summary statistics
+            stats_query = f"""
+            SELECT 
+                COUNT(DISTINCT s.id) as total_sessions,
+                COUNT(DISTINCT CASE WHEN s.ended_at IS NULL THEN s.id END) as active_sessions,
+                COUNT(r.id) as total_requests,
+                SUM(ul.cost_usd) as total_cost,
+                AVG(CASE 
+                    WHEN s.ended_at IS NOT NULL THEN 
+                        EXTRACT(EPOCH FROM (s.ended_at - s.started_at)) / 60.0
+                    ELSE 
+                        NULL
+                END) as avg_session_duration
+            FROM 
+                sessions s
+            JOIN 
+                users u ON s.user_id = u.id
+            LEFT JOIN 
+                requests r ON s.id = r.session_id
+            LEFT JOIN 
+                usage_logs ul ON r.id = ul.request_id
+            WHERE 
+                u.organization_id = :org_id
+                AND s.started_at BETWEEN :start_date AND :end_date
+                {user_filter}
+            """
+            
+            stats_result = await self.db.execute(text(stats_query), params)
+            stats_row = stats_result.fetchone()
+            
+            # Format response
+            sessions = []
+            for row in session_rows:
+                # Handle PostgreSQL arrays
+                models_used = []
+                if row.models_used:
+                    if isinstance(row.models_used, list):
+                        models_used = row.models_used
+                    else:
+                        try:
+                            models_used = row.models_used.strip('{}').split(',')
+                        except (AttributeError, ValueError):
+                            models_used = []
+                
+                session_data = {
+                    "session_id": row.session_id,
+                    "user_id": row.external_user_id,
+                    "started_at": row.started_at,
+                    "ended_at": row.ended_at,
+                    "duration_minutes": float(row.duration_minutes) if row.duration_minutes is not None else None,
+                    "request_count": row.request_count or 0,
+                    "total_tokens": row.total_tokens,
+                    "total_cost": float(row.total_cost) if row.total_cost is not None else None,
+                    "models_used": models_used,
+                    "is_active": row.is_active
+                }
+                sessions.append(session_data)
+            
+            return {
+                "sessions": sessions,
+                "total_sessions": stats_row.total_sessions if stats_row else 0,
+                "active_sessions": stats_row.active_sessions if stats_row else 0,
+                "total_requests": stats_row.total_requests if stats_row else 0,
+                "total_cost": float(stats_row.total_cost) if stats_row and stats_row.total_cost is not None else None,
+                "avg_session_duration": float(stats_row.avg_session_duration) if stats_row and stats_row.avg_session_duration is not None else None,
+                "period_start": start_date,
+                "period_end": end_date,
+                "filtered_by_user": user_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting sessions: {e}")
+            # Return empty result on error
+            return {
+                "sessions": [],
+                "total_sessions": 0,
+                "active_sessions": 0,
+                "total_requests": 0,
+                "total_cost": None,
+                "avg_session_duration": None,
+                "period_start": start_date,
+                "period_end": end_date,
+                "filtered_by_user": user_id
+            }

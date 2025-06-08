@@ -7,7 +7,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_organization
-from app.models.analytics import ModelUsageResponse, RatedResponsesResponse, UserUsageResponse
+from app.models.analytics import ModelUsageResponse, RatedResponsesResponse, UserUsageResponse, SessionsResponse
 from app.services.analytics_service import AnalyticsService
 import logging
 
@@ -169,4 +169,63 @@ async def get_user_usage(
         raise HTTPException(
             status_code=500,
             detail=f"Error retrieving user usage data: {str(e)}"
+        )
+
+
+@router.get("/sessions", response_model=SessionsResponse)
+async def get_sessions(
+    start_date: Optional[datetime] = Query(None, description="Start date for filtering"),
+    end_date: Optional[datetime] = Query(None, description="End date for filtering"),
+    user_id: Optional[str] = Query(None, description="Filter by external user ID"),
+    include_active: bool = Query(True, description="Include active sessions"),
+    include_completed: bool = Query(True, description="Include completed sessions"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    db: AsyncSession = Depends(get_db),
+    organization: Dict[str, Any] = Depends(get_current_organization)
+):
+    """
+    Get session analytics for an organization.
+    
+    This endpoint provides analytics on user sessions, including duration, request counts,
+    token usage, and costs. It can show both active and completed sessions over time.
+    
+    Parameters:
+    - **start_date**: Optional start date for filtering (defaults to 30 days ago)
+    - **end_date**: Optional end date for filtering (defaults to current time)
+    - **user_id**: Optional filter by external user ID
+    - **include_active**: Whether to include active sessions (default: true)
+    - **include_completed**: Whether to include completed sessions (default: true)
+    - **limit**: Maximum number of results to return (default: 50, max: 100)
+    - **offset**: Pagination offset (default: 0)
+    
+    Returns:
+    - List of sessions with analytics data and summary statistics
+    
+    Raises:
+    - 401: Unauthorized - If JWT authentication fails
+    - 403: Forbidden - If organization doesn't have permission
+    """
+    try:
+        logger.info(f"Sessions request for organization {organization['organization_id']}")
+        analytics_service = AnalyticsService(db)
+        
+        result = await analytics_service.get_sessions(
+            organization_id=organization["organization_id"],
+            start_date=start_date,
+            end_date=end_date,
+            user_id=user_id,
+            include_active=include_active,
+            include_completed=include_completed,
+            limit=limit,
+            offset=offset
+        )
+        
+        return SessionsResponse(**result)
+    
+    except Exception as e:
+        logger.error(f"Error in get_sessions: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving sessions data: {str(e)}"
         )
