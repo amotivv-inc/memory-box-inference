@@ -301,6 +301,25 @@ async def create_response(
                         }
                     )
                 
+                # Remove instructions from the response to reduce payload size
+                if "instructions" in response_data and response_data["instructions"] is not None:
+                    # Log the size of instructions being removed
+                    instructions_size = len(response_data["instructions"])
+                    logger.info(f"Removing instructions field ({instructions_size} chars) from non-streaming response")
+                    
+                    # Remove the instructions
+                    response_data.pop("instructions")
+                    
+                    # Re-serialize to JSON
+                    response_text = json.dumps(response_data)
+                elif "instructions" in response_data:
+                    # Instructions field exists but is None, just remove it without logging size
+                    logger.info("Removing null instructions field from non-streaming response")
+                    response_data.pop("instructions")
+                    
+                    # Re-serialize to JSON
+                    response_text = json.dumps(response_data)
+                
                 # Store the response ID if available
                 response_id = response_data.get("id")
                 if response_id:
