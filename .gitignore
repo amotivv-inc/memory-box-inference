@@ -85,3 +85,7 @@ config.local.py
 
 .claude
 .claude/
+test_analytics.py
+tests/test_analytics.py
+tests/test_personas.py
+tests/test_personas_integration.py
