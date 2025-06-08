@@ -7,8 +7,12 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_organization
-from app.models.analytics import ModelUsageResponse, RatedResponsesResponse, UserUsageResponse, SessionsResponse, PersonaUsageResponse
+from app.models.analytics import (
+    ModelUsageResponse, RatedResponsesResponse, UserUsageResponse, 
+    SessionsResponse, PersonaUsageResponse, PersonaDetailResponse
+)
 from app.services.analytics_service import AnalyticsService
+from app.services.persona_service import PersonaService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -284,4 +288,80 @@ async def get_sessions(
         raise HTTPException(
             status_code=500,
             detail=f"Error retrieving sessions data: {str(e)}"
+        )
+
+
+@router.get("/personas/{persona_id}", response_model=PersonaDetailResponse)
+async def get_persona_details(
+    persona_id: str,
+    start_date: Optional[datetime] = Query(None, description="Start date for filtering"),
+    end_date: Optional[datetime] = Query(None, description="End date for filtering"),
+    user_id: Optional[str] = Query(None, description="Filter by external user ID"),
+    db: AsyncSession = Depends(get_db),
+    organization: Dict[str, Any] = Depends(get_current_organization)
+):
+    """
+    Get detailed analytics for a specific persona.
+    
+    This endpoint provides comprehensive analytics for a specific persona,
+    including usage statistics, temporal trends, and user information.
+    
+    Parameters:
+    - **persona_id**: ID of the persona to analyze
+    - **start_date**: Optional start date for filtering (defaults to 30 days ago)
+    - **end_date**: Optional end date for filtering (defaults to current time)
+    - **user_id**: Optional filter by external user ID
+    
+    Returns:
+    - Detailed persona analytics including usage statistics, trends, and user data
+    
+    Raises:
+    - 401: Unauthorized - If JWT authentication fails
+    - 403: Forbidden - If organization doesn't have permission
+    - 404: Not Found - If the persona doesn't exist or isn't accessible
+    """
+    try:
+        logger.info(f"Persona details request for persona {persona_id} in organization {organization['organization_id']}")
+        analytics_service = AnalyticsService(db)
+        
+        # Validate persona ID format
+        try:
+            import uuid
+            persona_uuid = uuid.UUID(persona_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid persona ID format"
+            )
+        
+        # Check if persona exists and belongs to the organization
+        persona_service = PersonaService(db)
+        persona = await persona_service.get_persona(
+            organization_id=organization["organization_id"],
+            persona_id=persona_id
+        )
+        
+        if not persona:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Persona with ID {persona_id} not found"
+            )
+        
+        result = await analytics_service.get_persona_details(
+            organization_id=organization["organization_id"],
+            persona_id=persona_id,
+            start_date=start_date,
+            end_date=end_date,
+            user_id=user_id
+        )
+        
+        return PersonaDetailResponse(**result)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in get_persona_details: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving persona details: {str(e)}"
         )

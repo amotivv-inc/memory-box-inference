@@ -381,3 +381,161 @@ class PersonaUsageResponse(BaseModel):
             }
         }
     }
+
+
+class DailyUsageItem(BaseModel):
+    """Daily usage statistics for a persona"""
+    date: str = Field(..., description="Date in YYYY-MM-DD format", examples=["2025-06-01"])
+    request_count: int = Field(..., description="Number of requests on this date", examples=[25])
+    success_count: int = Field(..., description="Number of successful requests", examples=[24])
+    failure_count: int = Field(..., description="Number of failed requests", examples=[1])
+    total_tokens: Optional[int] = Field(None, description="Total tokens used", examples=[10000])
+    total_cost: Optional[float] = Field(None, description="Total cost in USD", examples=[0.25])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "date": "2025-06-01",
+                "request_count": 25,
+                "success_count": 24,
+                "failure_count": 1,
+                "total_tokens": 10000,
+                "total_cost": 0.25
+            }
+        }
+    }
+
+
+class UserUsageSummary(BaseModel):
+    """Summary of usage by a user for a specific persona"""
+    user_id: str = Field(..., description="External user ID", examples=["user123"])
+    request_count: int = Field(..., description="Number of requests", examples=[75])
+    total_tokens: Optional[int] = Field(None, description="Total tokens used", examples=[30000])
+    total_cost: Optional[float] = Field(None, description="Total cost in USD", examples=[0.75])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "user_id": "user123",
+                "request_count": 75,
+                "total_tokens": 30000,
+                "total_cost": 0.75
+            }
+        }
+    }
+
+
+class ModelUsageSummary(BaseModel):
+    """Summary of usage by model for a specific persona"""
+    model: str = Field(..., description="Model name", examples=["gpt-4o"])
+    request_count: int = Field(..., description="Number of requests", examples=[100])
+    input_tokens: Optional[int] = Field(None, description="Total input tokens", examples=[10000])
+    output_tokens: Optional[int] = Field(None, description="Total output tokens", examples=[30000])
+    total_tokens: Optional[int] = Field(None, description="Total tokens used", examples=[40000])
+    total_cost: Optional[float] = Field(None, description="Total cost in USD", examples=[1.00])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "model": "gpt-4o",
+                "request_count": 100,
+                "input_tokens": 10000,
+                "output_tokens": 30000,
+                "total_tokens": 40000,
+                "total_cost": 1.00
+            }
+        }
+    }
+
+
+class PersonaDetailResponse(BaseModel):
+    """Response model for detailed persona analytics"""
+    persona: Optional[PersonaUsageItem] = Field(None, description="Basic persona information and usage statistics")
+    
+    # Time series data for usage trends
+    daily_usage: List[DailyUsageItem] = Field(
+        default_factory=list,
+        description="Daily usage statistics"
+    )
+    
+    # Request statistics
+    request_count_by_model: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Request counts by model"
+    )
+    request_count_by_status: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Request counts by status"
+    )
+    
+    # Token usage statistics
+    token_usage_by_model: Dict[str, Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Token usage by model"
+    )
+    
+    # User statistics (if not restricted to a single user)
+    top_users: List[UserUsageSummary] = Field(
+        default_factory=list,
+        description="Top users of this persona"
+    )
+    
+    period_start: Optional[datetime] = Field(None, description="Start of period", examples=["2025-06-01T00:00:00Z"])
+    period_end: Optional[datetime] = Field(None, description="End of period", examples=["2025-06-07T23:59:59Z"])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "persona": {
+                    "persona_id": "123e4567-e89b-12d3-a456-426614174000",
+                    "name": "Customer Support Agent",
+                    "description": "A helpful customer support agent",
+                    "user_id": "user123",
+                    "request_count": 150,
+                    "success_count": 145,
+                    "failure_count": 5,
+                    "success_rate": 96.7,
+                    "input_tokens": 15000,
+                    "output_tokens": 45000,
+                    "total_tokens": 60000,
+                    "total_cost": 1.25,
+                    "avg_response_time": 1.5,
+                    "last_used_at": "2025-06-01T12:34:56Z",
+                    "models_used": ["gpt-4o", "gpt-4o-mini"],
+                    "is_active": True
+                },
+                "daily_usage": [
+                    {"date": "2025-06-01", "request_count": 25, "success_count": 24, "failure_count": 1, "total_tokens": 10000, "total_cost": 0.25},
+                    {"date": "2025-06-02", "request_count": 30, "success_count": 29, "failure_count": 1, "total_tokens": 12000, "total_cost": 0.30}
+                ],
+                "request_count_by_model": {
+                    "gpt-4o": 100,
+                    "gpt-4o-mini": 50
+                },
+                "request_count_by_status": {
+                    "completed": 145,
+                    "failed": 5
+                },
+                "token_usage_by_model": {
+                    "gpt-4o": {
+                        "input_tokens": 10000,
+                        "output_tokens": 30000,
+                        "total_tokens": 40000,
+                        "total_cost": 1.00
+                    },
+                    "gpt-4o-mini": {
+                        "input_tokens": 5000,
+                        "output_tokens": 15000,
+                        "total_tokens": 20000,
+                        "total_cost": 0.25
+                    }
+                },
+                "top_users": [
+                    {"user_id": "user123", "request_count": 75, "total_tokens": 30000, "total_cost": 0.75},
+                    {"user_id": "user456", "request_count": 50, "total_tokens": 20000, "total_cost": 0.50}
+                ],
+                "period_start": "2025-06-01T00:00:00Z",
+                "period_end": "2025-06-07T23:59:59Z"
+            }
+        }
+    }
