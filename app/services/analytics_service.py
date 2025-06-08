@@ -653,3 +653,186 @@ class AnalyticsService:
                 "period_end": end_date,
                 "filtered_by_user": user_id
             }
+    
+    async def get_persona_usage(
+        self,
+        organization_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        user_id: Optional[str] = None,
+        include_inactive: bool = False,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get usage statistics by persona
+        
+        Args:
+            organization_id: Organization ID
+            start_date: Optional start date filter
+            end_date: Optional end date filter
+            user_id: Optional user ID filter
+            include_inactive: Whether to include inactive personas
+            limit: Maximum number of results to return
+            offset: Pagination offset
+            
+        Returns:
+            Dictionary with persona usage statistics
+        """
+        # Default to last 30 days if no dates provided
+        if not start_date:
+            start_date = datetime.utcnow() - timedelta(days=30)
+        if not end_date:
+            end_date = datetime.utcnow()
+        
+        logger.info(f"Getting persona usage for org {organization_id} from {start_date} to {end_date}")
+        
+        try:
+            # Build query parameters
+            params = {
+                "org_id": organization_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "limit": limit,
+                "offset": offset
+            }
+            
+            # Add user filter if provided
+            user_filter = ""
+            if user_id is not None:
+                user_filter = "AND u.user_id = :user_id"
+                params["user_id"] = user_id
+            
+            # Add active filter if needed
+            active_filter = ""
+            if not include_inactive:
+                active_filter = "AND p.is_active = TRUE"
+            
+            # Build query for persona usage
+            persona_query = f"""
+            SELECT 
+                p.id as persona_id,
+                p.name,
+                p.description,
+                u2.user_id as restricted_user_id,
+                COUNT(r.id) as request_count,
+                COUNT(CASE WHEN r.status = 'completed' THEN 1 END) as success_count,
+                COUNT(CASE WHEN r.status = 'failed' THEN 1 END) as failure_count,
+                ROUND(COUNT(CASE WHEN r.status = 'completed' THEN 1 END)::numeric / 
+                      NULLIF(COUNT(r.id), 0)::numeric * 100, 1) as success_rate,
+                SUM(ul.input_tokens) as input_tokens,
+                SUM(ul.output_tokens) as output_tokens,
+                SUM(ul.total_tokens) as total_tokens,
+                SUM(ul.cost_usd) as total_cost,
+                AVG(EXTRACT(EPOCH FROM (r.completed_at - r.created_at))) as avg_response_time,
+                MAX(r.created_at) as last_used_at,
+                array_agg(DISTINCT r.model) FILTER (WHERE r.model IS NOT NULL) as models_used,
+                p.is_active
+            FROM 
+                personas p
+            LEFT JOIN 
+                users u2 ON p.user_id = u2.id
+            LEFT JOIN 
+                requests r ON p.id = r.persona_id AND r.created_at BETWEEN :start_date AND :end_date
+            LEFT JOIN 
+                users u ON r.user_id = u.id
+            LEFT JOIN 
+                usage_logs ul ON r.id = ul.request_id
+            WHERE 
+                p.organization_id = :org_id
+                {active_filter}
+                {user_filter}
+            GROUP BY 
+                p.id, p.name, p.description, u2.user_id, p.is_active
+            ORDER BY 
+                request_count DESC NULLS LAST, p.name ASC
+            LIMIT :limit OFFSET :offset
+            """
+            
+            # Execute query
+            persona_result = await self.db.execute(text(persona_query), params)
+            persona_rows = persona_result.fetchall()
+            
+            # Get total counts
+            counts_query = f"""
+            SELECT 
+                COUNT(DISTINCT p.id) as total_personas,
+                COUNT(r.id) as total_requests,
+                SUM(ul.cost_usd) as total_cost
+            FROM 
+                personas p
+            LEFT JOIN 
+                requests r ON p.id = r.persona_id AND r.created_at BETWEEN :start_date AND :end_date
+            LEFT JOIN 
+                users u ON r.user_id = u.id
+            LEFT JOIN 
+                usage_logs ul ON r.id = ul.request_id
+            WHERE 
+                p.organization_id = :org_id
+                {active_filter}
+                {user_filter}
+            """
+            
+            counts_result = await self.db.execute(text(counts_query), params)
+            counts_row = counts_result.fetchone()
+            
+            # Format response
+            personas = []
+            for row in persona_rows:
+                # Handle NULL values and type conversions
+                models_used = []
+                if row.models_used:
+                    # Convert PostgreSQL array to Python list
+                    if isinstance(row.models_used, list):
+                        models_used = row.models_used
+                    else:
+                        # Handle string representation of array if needed
+                        try:
+                            models_used = row.models_used.strip('{}').split(',')
+                        except (AttributeError, ValueError):
+                            models_used = []
+                
+                persona_data = {
+                    "persona_id": str(row.persona_id),
+                    "name": row.name,
+                    "description": row.description,
+                    "user_id": row.restricted_user_id,
+                    "request_count": row.request_count or 0,
+                    "success_count": row.success_count or 0,
+                    "failure_count": row.failure_count or 0,
+                    "success_rate": float(row.success_rate) if row.success_rate is not None else 0.0,
+                    "input_tokens": row.input_tokens,
+                    "output_tokens": row.output_tokens,
+                    "total_tokens": row.total_tokens,
+                    "total_cost": float(row.total_cost) if row.total_cost is not None else None,
+                    "avg_response_time": float(row.avg_response_time) if row.avg_response_time is not None else None,
+                    "last_used_at": row.last_used_at,
+                    "models_used": models_used,
+                    "is_active": row.is_active
+                }
+                personas.append(persona_data)
+            
+            return {
+                "personas": personas,
+                "total_personas": counts_row.total_personas if counts_row else 0,
+                "total_requests": counts_row.total_requests if counts_row else 0,
+                "total_cost": float(counts_row.total_cost) if counts_row and counts_row.total_cost is not None else None,
+                "period_start": start_date,
+                "period_end": end_date,
+                "filtered_by_user": user_id,
+                "include_inactive": include_inactive
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting persona usage: {e}")
+            # Return empty result on error
+            return {
+                "personas": [],
+                "total_personas": 0,
+                "total_requests": 0,
+                "total_cost": None,
+                "period_start": start_date,
+                "period_end": end_date,
+                "filtered_by_user": user_id,
+                "include_inactive": include_inactive
+            }

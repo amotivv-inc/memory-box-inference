@@ -9,7 +9,7 @@ import sys
 
 from app.config import settings, validate_settings
 from app.core import init_db, close_db
-from app.api import responses_router, users_router, api_keys_router, analytics_router
+from app.api import responses_router, users_router, api_keys_router, analytics_router, personas_router
 from app.models.requests import ErrorResponse, ErrorDetail
 
 # Configure logging
@@ -81,6 +81,10 @@ app = FastAPI(
         {
             "name": "analytics",
             "description": "Analytics endpoints for usage statistics and insights"
+        },
+        {
+            "name": "personas",
+            "description": "Persona management endpoints for creating and managing system prompts"
         }
     ],
     lifespan=lifespan,
@@ -161,6 +165,11 @@ app.include_router(
 
 app.include_router(
     analytics_router,
+    prefix=settings.api_prefix
+)
+
+app.include_router(
+    personas_router,
     prefix=settings.api_prefix
 )
 

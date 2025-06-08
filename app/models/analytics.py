@@ -292,3 +292,92 @@ class SessionsResponse(BaseModel):
             }
         }
     }
+
+
+class PersonaUsageItem(BaseModel):
+    """Usage statistics for a single persona"""
+    persona_id: str = Field(..., description="Persona ID", examples=["123e4567-e89b-12d3-a456-426614174000"])
+    name: str = Field(..., description="Persona name", examples=["Customer Support Agent"])
+    description: Optional[str] = Field(None, description="Persona description", examples=["A helpful customer support agent"])
+    user_id: Optional[str] = Field(None, description="User ID if persona is restricted", examples=["user123"])
+    request_count: int = Field(..., description="Number of requests using this persona", examples=[150])
+    success_count: int = Field(..., description="Number of successful requests", examples=[145])
+    failure_count: int = Field(..., description="Number of failed requests", examples=[5])
+    success_rate: float = Field(..., description="Success rate percentage", examples=[96.7])
+    input_tokens: Optional[int] = Field(None, description="Total input tokens", examples=[15000])
+    output_tokens: Optional[int] = Field(None, description="Total output tokens", examples=[45000])
+    total_tokens: Optional[int] = Field(None, description="Total tokens used", examples=[60000])
+    total_cost: Optional[float] = Field(None, description="Total cost in USD", examples=[1.25])
+    avg_response_time: Optional[float] = Field(None, description="Average response time in seconds", examples=[1.5])
+    last_used_at: Optional[datetime] = Field(None, description="Timestamp of last use", examples=["2025-06-01T12:34:56Z"])
+    models_used: List[str] = Field(default_factory=list, description="List of models used with this persona", examples=[["gpt-4o", "gpt-4o-mini"]])
+    is_active: bool = Field(..., description="Whether the persona is active", examples=[True])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "persona_id": "123e4567-e89b-12d3-a456-426614174000",
+                "name": "Customer Support Agent",
+                "description": "A helpful customer support agent",
+                "user_id": "user123",
+                "request_count": 150,
+                "success_count": 145,
+                "failure_count": 5,
+                "success_rate": 96.7,
+                "input_tokens": 15000,
+                "output_tokens": 45000,
+                "total_tokens": 60000,
+                "total_cost": 1.25,
+                "avg_response_time": 1.5,
+                "last_used_at": "2025-06-01T12:34:56Z",
+                "models_used": ["gpt-4o", "gpt-4o-mini"],
+                "is_active": True
+            }
+        }
+    }
+
+
+class PersonaUsageResponse(BaseModel):
+    """Response model for persona usage analytics"""
+    personas: List[PersonaUsageItem] = Field(..., description="Usage statistics by persona")
+    total_personas: int = Field(..., description="Total number of personas", examples=[10])
+    total_requests: int = Field(..., description="Total number of requests using personas", examples=[200])
+    total_cost: Optional[float] = Field(None, description="Total cost in USD", examples=[2.50])
+    period_start: Optional[datetime] = Field(None, description="Start of period", examples=["2025-06-01T00:00:00Z"])
+    period_end: Optional[datetime] = Field(None, description="End of period", examples=["2025-06-07T23:59:59Z"])
+    filtered_by_user: Optional[str] = Field(None, description="User ID filter applied", examples=["user123"])
+    include_inactive: bool = Field(..., description="Whether inactive personas are included", examples=[False])
+    
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "personas": [
+                    {
+                        "persona_id": "123e4567-e89b-12d3-a456-426614174000",
+                        "name": "Customer Support Agent",
+                        "description": "A helpful customer support agent",
+                        "user_id": "user123",
+                        "request_count": 150,
+                        "success_count": 145,
+                        "failure_count": 5,
+                        "success_rate": 96.7,
+                        "input_tokens": 15000,
+                        "output_tokens": 45000,
+                        "total_tokens": 60000,
+                        "total_cost": 1.25,
+                        "avg_response_time": 1.5,
+                        "last_used_at": "2025-06-01T12:34:56Z",
+                        "models_used": ["gpt-4o", "gpt-4o-mini"],
+                        "is_active": True
+                    }
+                ],
+                "total_personas": 10,
+                "total_requests": 200,
+                "total_cost": 2.50,
+                "period_start": "2025-06-01T00:00:00Z",
+                "period_end": "2025-06-07T23:59:59Z",
+                "filtered_by_user": "user123",
+                "include_inactive": False
+            }
+        }
+    }

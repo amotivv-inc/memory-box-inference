@@ -33,6 +33,11 @@ class ResponsesInput(BaseModel):
         description="System message",
         examples=["You are a helpful AI assistant."]
     )
+    persona_id: Optional[str] = Field(
+        default=None,
+        description="ID of a persona to use as the system message",
+        examples=["123e4567-e89b-12d3-a456-426614174000"]
+    )
     max_output_tokens: Optional[int] = Field(
         default=None,
         description="Max tokens for response",

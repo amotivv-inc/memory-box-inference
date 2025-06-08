@@ -7,7 +7,7 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.core.security import get_current_organization
-from app.models.analytics import ModelUsageResponse, RatedResponsesResponse, UserUsageResponse, SessionsResponse
+from app.models.analytics import ModelUsageResponse, RatedResponsesResponse, UserUsageResponse, SessionsResponse, PersonaUsageResponse
 from app.services.analytics_service import AnalyticsService
 import logging
 
@@ -169,6 +169,62 @@ async def get_user_usage(
         raise HTTPException(
             status_code=500,
             detail=f"Error retrieving user usage data: {str(e)}"
+        )
+
+
+@router.get("/personas", response_model=PersonaUsageResponse)
+async def get_persona_usage(
+    start_date: Optional[datetime] = Query(None, description="Start date for filtering"),
+    end_date: Optional[datetime] = Query(None, description="End date for filtering"),
+    user_id: Optional[str] = Query(None, description="Filter by external user ID"),
+    include_inactive: bool = Query(False, description="Include inactive personas"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
+    db: AsyncSession = Depends(get_db),
+    organization: Dict[str, Any] = Depends(get_current_organization)
+):
+    """
+    Get usage statistics by persona.
+    
+    This endpoint provides analytics on persona usage, including request counts,
+    token usage, costs, and success rates.
+    
+    Parameters:
+    - **start_date**: Optional start date for filtering (defaults to 30 days ago)
+    - **end_date**: Optional end date for filtering (defaults to current time)
+    - **user_id**: Optional filter by external user ID
+    - **include_inactive**: Whether to include inactive personas (default: false)
+    - **limit**: Maximum number of results to return (default: 50, max: 100)
+    - **offset**: Pagination offset (default: 0)
+    
+    Returns:
+    - Persona usage statistics including counts, tokens, costs, and success rates
+    
+    Raises:
+    - 401: Unauthorized - If JWT authentication fails
+    - 403: Forbidden - If organization doesn't have permission
+    """
+    try:
+        logger.info(f"Persona usage request for organization {organization['organization_id']}")
+        analytics_service = AnalyticsService(db)
+        
+        result = await analytics_service.get_persona_usage(
+            organization_id=organization["organization_id"],
+            start_date=start_date,
+            end_date=end_date,
+            user_id=user_id,
+            include_inactive=include_inactive,
+            limit=limit,
+            offset=offset
+        )
+        
+        return PersonaUsageResponse(**result)
+    
+    except Exception as e:
+        logger.error(f"Error in get_persona_usage: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving persona usage data: {str(e)}"
         )
 
 

@@ -17,7 +17,7 @@ from app.models.requests import (
     ErrorResponse, ErrorDetail, HealthResponse
 )
 from app.models.database import Request as RequestModel, APIKey
-from app.services import KeyMapperService, SessionManagerService, UsageLoggerService
+from app.services import KeyMapperService, SessionManagerService, UsageLoggerService, PersonaService
 from app.utils import StreamingResponseHandler
 import logging
 
@@ -97,6 +97,7 @@ async def create_response(
         key_mapper = KeyMapperService(db)
         session_manager = SessionManagerService(db)
         usage_logger = UsageLoggerService(db)
+        persona_service = PersonaService(db)
         
         # Get or create user first
         user = await session_manager.get_or_create_user(
@@ -126,6 +127,32 @@ async def create_response(
             session_id=x_session_id
         )
         
+        # Handle persona if specified
+        persona_id = None
+        if request_data.persona_id:
+            try:
+                persona = await persona_service.get_persona_for_request(
+                    organization_id=organization["organization_id"],
+                    persona_id=request_data.persona_id,
+                    external_user_id=x_user_id
+                )
+                
+                if not persona:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Persona with ID {request_data.persona_id} not found or not accessible"
+                    )
+                
+                # Override instructions with persona content
+                request_data.instructions = persona.content
+                persona_id = str(persona.id)
+                logger.info(f"Using persona {persona.name} for request")
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid persona ID format: {request_data.persona_id}"
+                )
+        
         # Generate request ID
         request_id = f"req_{uuid.uuid4().hex}"
         
@@ -136,11 +163,12 @@ async def create_response(
             user_id=session.user_id,
             api_key_id=api_key_record.id,
             model=request_data.model,
-            request_payload=request_data.model_dump()
+            request_payload=request_data.model_dump(),
+            persona_id=persona_id
         )
         
-        # Prepare request for OpenAI
-        openai_request = request_data.model_dump(exclude_none=True)
+        # Prepare request for OpenAI - exclude persona_id as it's not recognized by OpenAI
+        openai_request = request_data.model_dump(exclude={"persona_id"} if request_data.persona_id else None, exclude_none=True)
         
         # Handle streaming vs non-streaming
         if request_data.stream:
