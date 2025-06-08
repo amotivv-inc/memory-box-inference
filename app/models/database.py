@@ -25,6 +25,7 @@ class Organization(Base):
     # Relationships
     api_keys = relationship("APIKey", back_populates="organization", cascade="all, delete-orphan")
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
+    personas = relationship("Persona", back_populates="organization", cascade="all, delete-orphan")
 
 
 class APIKey(Base):
@@ -62,6 +63,7 @@ class User(Base):
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
     requests = relationship("Request", back_populates="user")
     api_keys = relationship("APIKey", back_populates="user")
+    personas = relationship("Persona", back_populates="user")
     
     # Constraints
     __table_args__ = (
@@ -94,6 +96,7 @@ class Request(Base):
     session_id = Column(UUID(as_uuid=True), ForeignKey("sessions.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     api_key_id = Column(UUID(as_uuid=True), ForeignKey("api_keys.id"), nullable=False)
+    persona_id = Column(UUID(as_uuid=True), ForeignKey("personas.id"), nullable=True)  # Reference to persona
     model = Column(String(100), nullable=False)
     request_payload = Column(JSON, nullable=False)
     response_payload = Column(JSON, nullable=True)
@@ -109,6 +112,7 @@ class Request(Base):
     session = relationship("Session", back_populates="requests")
     user = relationship("User", back_populates="requests")
     api_key = relationship("APIKey", back_populates="requests")
+    persona = relationship("Persona", back_populates="requests")
     usage_logs = relationship("UsageLog", back_populates="request", cascade="all, delete-orphan")
     
     # Constraints
@@ -133,3 +137,28 @@ class UsageLog(Base):
     
     # Relationships
     request = relationship("Request", back_populates="usage_logs")
+
+
+class Persona(Base):
+    """Stored system prompts (personas) for OpenAI requests"""
+    __tablename__ = "personas"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # Optional user restriction
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    content = Column(Text, nullable=False)  # The actual system prompt content
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="personas")
+    user = relationship("User", back_populates="personas")
+    requests = relationship("Request", back_populates="persona")
+    
+    # Constraints
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'name', name='_org_persona_name_uc'),
+    )

@@ -43,7 +43,8 @@ class UsageLoggerService:
         user_id: str,
         api_key_id: str,
         model: str,
-        request_payload: Dict[str, Any]
+        request_payload: Dict[str, Any],
+        persona_id: Optional[str] = None
     ) -> Request:
         """
         Create a new request record
@@ -66,7 +67,8 @@ class UsageLoggerService:
             api_key_id=api_key_id,
             model=model,
             request_payload=request_payload,
-            status="pending"
+            status="pending",
+            persona_id=persona_id
         )
         self.db.add(request)
         await self.db.flush()

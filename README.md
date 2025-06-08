@@ -80,7 +80,9 @@ flowchart TD
   - **User-scoped keys**: Restrict API access to specific users
   - **Organization-wide keys**: Shared access for all users in an organization
 - 👥 **Automatic User Management**: Users are created on-demand when they make their first request
+- 🧠 **Persona Management**: Create and manage system prompts with user-scoped access control
 - 📊 **Comprehensive Usage Tracking**: Monitor token usage and costs per user, session, and organization
+- 📈 **Persona Analytics**: Track usage, performance, and costs of different personas
 - ⭐ **Response Rating**: Users can rate AI responses with feedback
 - 🌐 **Browser Compatible**: Full CORS support for web applications
 - 🚀 **Streaming Support**: Efficient handling of both streaming and non-streaming responses
@@ -487,6 +489,38 @@ Update an API key.
 #### `DELETE /v1/keys/{key_id}`
 Deactivate an API key.
 
+#### `GET /v1/personas`
+List personas in the organization.
+
+#### `POST /v1/personas`
+Create a new persona (system prompt).
+
+#### `GET /v1/personas/{persona_id}`
+Get a specific persona by ID.
+
+#### `PUT /v1/personas/{persona_id}`
+Update a persona.
+
+#### `DELETE /v1/personas/{persona_id}`
+Delete a persona.
+
+### Analytics Endpoints
+
+#### `GET /v1/analytics/models`
+Get model usage statistics.
+
+#### `GET /v1/analytics/rated-responses`
+Get responses with ratings.
+
+#### `GET /v1/analytics/user-usage`
+Get user usage statistics.
+
+#### `GET /v1/analytics/sessions`
+Get session analytics.
+
+#### `GET /v1/analytics/personas/{persona_id}`
+Get detailed analytics for a specific persona, including usage statistics, daily trends, model usage breakdown, and top users.
+
 ### Utility Endpoints
 
 - `GET /health` - Health check with OpenAI connectivity test
@@ -634,10 +668,13 @@ This allows for:
 erDiagram
     organizations ||--o{ users : contains
     organizations ||--o{ api_keys : has
+    organizations ||--o{ personas : has
     users ||--o{ sessions : creates
     users ||--o{ api_keys : owns
+    users ||--o{ personas : restricts
     sessions ||--o{ requests : groups
     requests ||--|| usage_logs : tracks
+    personas ||--o{ requests : used_by
     
     organizations {
         uuid id
@@ -673,6 +710,7 @@ erDiagram
         uuid session_id
         string request_id
         string response_id
+        uuid persona_id
         jsonb content
         int rating
         timestamp created_at
@@ -685,6 +723,17 @@ erDiagram
         int completion_tokens
         int total_tokens
         float total_cost
+        timestamp created_at
+    }
+    
+    personas {
+        uuid id
+        uuid organization_id
+        uuid user_id
+        string name
+        text description
+        text content
+        boolean is_active
         timestamp created_at
     }
 ```
