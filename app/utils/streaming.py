@@ -94,9 +94,32 @@ class StreamingResponseHandler:
                         if data_str and data_str != "[DONE]":
                             data = json.loads(data_str)
                             
+                            # Remove instructions from the response object if present
+                            if "response" in data and "instructions" in data["response"] and data["response"]["instructions"] is not None:
+                                instructions_size = len(data["response"]["instructions"])
+                                logger.info(f"Removing instructions field ({instructions_size} chars) from streaming chunk")
+                                data["response"].pop("instructions")
+                                # Re-serialize the chunk
+                                chunk = f"data: {json.dumps(data)}\n\n"
+                            elif "response" in data and "instructions" in data["response"]:
+                                # Instructions field exists but is None, just remove it without logging size
+                                logger.info("Removing null instructions field from streaming chunk")
+                                data["response"].pop("instructions")
+                                # Re-serialize the chunk
+                                chunk = f"data: {json.dumps(data)}\n\n"
+                            
                             # Check for response completion event
                             if data.get("type") == "response.completed":
                                 response = data.get("response", {})
+                                # Remove instructions from the complete response
+                                if "instructions" in response and response["instructions"] is not None:
+                                    instructions_size = len(response["instructions"])
+                                    logger.info(f"Removing instructions field ({instructions_size} chars) from completion event")
+                                    response.pop("instructions")
+                                elif "instructions" in response:
+                                    # Instructions field exists but is None, just remove it without logging size
+                                    logger.info("Removing null instructions field from completion event")
+                                    response.pop("instructions")
                                 self.usage_data = response.get("usage")
                                 self.response_data = response
                                 self.response_id = response.get("id")  # Extract response ID
@@ -104,7 +127,7 @@ class StreamingResponseHandler:
                     except json.JSONDecodeError as e:
                         logger.error(f"Failed to parse SSE data: {e}")
                 
-                # Forward the chunk with custom headers
+                # Forward the modified chunk
                 yield chunk
                 
         except Exception as e:
