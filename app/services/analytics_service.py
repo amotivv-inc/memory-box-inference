@@ -305,3 +305,162 @@ class AnalyticsService:
                 "filtered_by_user": user_id,
                 "filtered_by_session": session_id
             }
+            
+    async def get_user_usage(
+        self,
+        organization_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        user_id: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get usage statistics by user
+        
+        Args:
+            organization_id: Organization ID
+            start_date: Optional start date filter
+            end_date: Optional end date filter
+            user_id: Optional user ID filter
+            limit: Maximum number of results to return
+            offset: Pagination offset
+            
+        Returns:
+            Dictionary with user usage statistics
+        """
+        # Default to last 30 days if no dates provided
+        if not start_date:
+            start_date = datetime.utcnow() - timedelta(days=30)
+        if not end_date:
+            end_date = datetime.utcnow()
+        
+        logger.info(f"Getting user usage for org {organization_id} from {start_date} to {end_date}")
+        
+        try:
+            # Build query parameters
+            params = {
+                "org_id": organization_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "limit": limit,
+                "offset": offset
+            }
+            
+            # Add user filter if provided
+            user_filter = ""
+            if user_id is not None:
+                user_filter = "AND u.user_id = :user_id"
+                params["user_id"] = user_id
+            
+            # Build query for user usage
+            # Using raw SQL to avoid recursion issues
+            user_query = f"""
+            SELECT 
+                u.user_id as external_user_id,
+                COUNT(r.id) as request_count,
+                COUNT(CASE WHEN r.status = 'completed' THEN 1 END) as success_count,
+                COUNT(CASE WHEN r.status = 'failed' THEN 1 END) as failure_count,
+                ROUND(COUNT(CASE WHEN r.status = 'completed' THEN 1 END)::numeric / 
+                      NULLIF(COUNT(r.id), 0)::numeric * 100, 1) as success_rate,
+                SUM(ul.input_tokens) as input_tokens,
+                SUM(ul.output_tokens) as output_tokens,
+                SUM(ul.total_tokens) as total_tokens,
+                SUM(ul.cost_usd) as total_cost,
+                AVG(EXTRACT(EPOCH FROM (r.completed_at - r.created_at))) as avg_response_time,
+                MAX(r.created_at) as last_request_at,
+                array_agg(DISTINCT r.model) FILTER (WHERE r.model IS NOT NULL) as models_used
+            FROM 
+                users u
+            LEFT JOIN 
+                requests r ON u.id = r.user_id AND r.created_at BETWEEN :start_date AND :end_date
+            LEFT JOIN 
+                usage_logs ul ON r.id = ul.request_id
+            WHERE 
+                u.organization_id = :org_id
+                {user_filter}
+            GROUP BY 
+                u.user_id
+            ORDER BY 
+                request_count DESC NULLS LAST
+            LIMIT :limit OFFSET :offset
+            """
+            
+            # Execute query
+            user_result = await self.db.execute(text(user_query), params)
+            user_rows = user_result.fetchall()
+            
+            # Get total counts
+            counts_query = f"""
+            SELECT 
+                COUNT(DISTINCT u.id) as total_users,
+                COUNT(r.id) as total_requests,
+                SUM(ul.cost_usd) as total_cost
+            FROM 
+                users u
+            LEFT JOIN 
+                requests r ON u.id = r.user_id AND r.created_at BETWEEN :start_date AND :end_date
+            LEFT JOIN 
+                usage_logs ul ON r.id = ul.request_id
+            WHERE 
+                u.organization_id = :org_id
+                {user_filter}
+            """
+            
+            counts_result = await self.db.execute(text(counts_query), params)
+            counts_row = counts_result.fetchone()
+            
+            # Format response
+            users = []
+            for row in user_rows:
+                # Handle NULL values and type conversions
+                models_used = []
+                if row.models_used:
+                    # Convert PostgreSQL array to Python list
+                    if isinstance(row.models_used, list):
+                        models_used = row.models_used
+                    else:
+                        # Handle string representation of array if needed
+                        try:
+                            models_used = row.models_used.strip('{}').split(',')
+                        except (AttributeError, ValueError):
+                            models_used = []
+                
+                user_data = {
+                    "user_id": row.external_user_id,
+                    "request_count": row.request_count or 0,
+                    "success_count": row.success_count or 0,
+                    "failure_count": row.failure_count or 0,
+                    "success_rate": float(row.success_rate) if row.success_rate is not None else 0.0,
+                    "input_tokens": row.input_tokens,
+                    "output_tokens": row.output_tokens,
+                    "total_tokens": row.total_tokens,
+                    "total_cost": float(row.total_cost) if row.total_cost is not None else None,
+                    "avg_response_time": float(row.avg_response_time) if row.avg_response_time is not None else None,
+                    "last_request_at": row.last_request_at,
+                    "models_used": models_used
+                }
+                users.append(user_data)
+            
+            return {
+                "users": users,
+                "total_users": counts_row.total_users if counts_row else 0,
+                "total_requests": counts_row.total_requests if counts_row else 0,
+                "total_cost": float(counts_row.total_cost) if counts_row and counts_row.total_cost is not None else None,
+                "period_start": start_date,
+                "period_end": end_date,
+                "filtered_by_user": user_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting user usage: {e}")
+            # Return empty result on error
+            return {
+                "users": [],
+                "total_users": 0,
+                "total_requests": 0,
+                "total_cost": None,
+                "period_start": start_date,
+                "period_end": end_date,
+                "filtered_by_user": user_id
+            }
