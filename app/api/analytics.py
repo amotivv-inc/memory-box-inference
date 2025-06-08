@@ -65,6 +65,8 @@ async def get_rated_responses(
     start_date: Optional[datetime] = Query(None, description="Start date for filtering"),
     end_date: Optional[datetime] = Query(None, description="End date for filtering"),
     rating: Optional[int] = Query(None, ge=-1, le=1, description="Filter by rating value (-1, 0, 1)"),
+    user_id: Optional[str] = Query(None, description="Filter by external user ID"),
+    session_id: Optional[str] = Query(None, description="Filter by session ID"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of results to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     db: AsyncSession = Depends(get_db),
@@ -80,6 +82,8 @@ async def get_rated_responses(
     - **start_date**: Optional start date for filtering (defaults to 30 days ago)
     - **end_date**: Optional end date for filtering (defaults to current time)
     - **rating**: Optional filter by rating value (-1 for negative, 0 for neutral, 1 for positive)
+    - **user_id**: Optional filter by external user ID
+    - **session_id**: Optional filter by session ID
     - **limit**: Maximum number of results to return (default: 50, max: 100)
     - **offset**: Pagination offset (default: 0)
     
@@ -99,6 +103,8 @@ async def get_rated_responses(
             start_date=start_date,
             end_date=end_date,
             rating=rating,
+            user_id=user_id,
+            session_id=session_id,
             limit=limit,
             offset=offset
         )

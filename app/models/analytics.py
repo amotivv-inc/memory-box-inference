@@ -112,6 +112,8 @@ class RatedResponsesResponse(BaseModel):
     neutral_count: int = Field(..., description="Number of neutral ratings (0)", examples=[10])
     period_start: Optional[datetime] = Field(None, description="Start of period", examples=["2025-06-01T00:00:00Z"])
     period_end: Optional[datetime] = Field(None, description="End of period", examples=["2025-06-07T23:59:59Z"])
+    filtered_by_user: Optional[str] = Field(None, description="User ID filter applied", examples=["user123"])
+    filtered_by_session: Optional[str] = Field(None, description="Session ID filter applied", examples=["sess_1234567890"])
     
     model_config = {
         "json_schema_extra": {
@@ -136,7 +138,9 @@ class RatedResponsesResponse(BaseModel):
                 "negative_count": 15,
                 "neutral_count": 10,
                 "period_start": "2025-06-01T00:00:00Z",
-                "period_end": "2025-06-07T23:59:59Z"
+                "period_end": "2025-06-07T23:59:59Z",
+                "filtered_by_user": "user123",
+                "filtered_by_session": "sess_1234567890"
             }
         }
     }

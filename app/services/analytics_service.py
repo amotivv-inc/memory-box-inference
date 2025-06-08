@@ -143,6 +143,8 @@ class AnalyticsService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         rating: Optional[int] = None,
+        user_id: Optional[str] = None,
+        session_id: Optional[str] = None,
         limit: int = 50,
         offset: int = 0
     ) -> Dict[str, Any]:
@@ -154,6 +156,8 @@ class AnalyticsService:
             start_date: Optional start date filter
             end_date: Optional end date filter
             rating: Optional rating filter (-1, 0, 1)
+            user_id: Optional user ID filter
+            session_id: Optional session ID filter
             limit: Maximum number of results to return
             offset: Pagination offset
             
@@ -178,11 +182,21 @@ class AnalyticsService:
                 "offset": offset
             }
             
-            # Add rating filter if provided
+            # Add filters if provided
             rating_filter = ""
             if rating is not None:
                 rating_filter = "AND r.rating = :rating"
                 params["rating"] = rating
+                
+            user_filter = ""
+            if user_id is not None:
+                user_filter = "AND u.user_id = :user_id"
+                params["user_id"] = user_id
+                
+            session_filter = ""
+            if session_id is not None:
+                session_filter = "AND s.session_id = :session_id"
+                params["session_id"] = session_id
             
             # Build query for rated responses
             responses_query = f"""
@@ -196,29 +210,23 @@ class AnalyticsService:
                 r.rating_timestamp,
                 r.created_at,
                 r.completed_at,
-                -- Extract preview of input (handle different input formats)
-                CASE 
-                    WHEN jsonb_typeof(r.request_payload->'input') = 'string' 
-                    THEN SUBSTRING(CAST(r.request_payload->>'input' AS TEXT), 1, 100)
-                    WHEN jsonb_typeof(r.request_payload->'input') = 'array' 
-                    THEN SUBSTRING(CAST(r.request_payload->'input'->0->>'text' AS TEXT), 1, 100)
-                    ELSE 'Input not available'
-                END as input_preview,
-                -- Extract preview of output
-                CASE 
-                    WHEN jsonb_typeof(r.response_payload->'content') = 'array' 
-                    THEN SUBSTRING(CAST(r.response_payload->'content'->0->>'text' AS TEXT), 1, 100)
-                    ELSE 'Output not available'
-                END as output_preview
+                -- Extract preview of input (simplified to avoid jsonb_typeof)
+                SUBSTRING(CAST(r.request_payload->>'input' AS TEXT), 1, 100) as input_preview,
+                -- Extract preview of output (simplified to avoid jsonb_typeof)
+                SUBSTRING(CAST(r.response_payload AS TEXT), 1, 100) as output_preview
             FROM 
                 requests r
             JOIN 
                 users u ON r.user_id = u.id
+            JOIN 
+                sessions s ON r.session_id = s.id
             WHERE 
                 u.organization_id = :org_id
                 AND r.rating IS NOT NULL
                 AND r.created_at BETWEEN :start_date AND :end_date
                 {rating_filter}
+                {user_filter}
+                {session_filter}
             ORDER BY 
                 r.rating_timestamp DESC
             LIMIT :limit OFFSET :offset
@@ -239,11 +247,15 @@ class AnalyticsService:
                 requests r
             JOIN 
                 users u ON r.user_id = u.id
+            JOIN 
+                sessions s ON r.session_id = s.id
             WHERE 
                 u.organization_id = :org_id
                 AND r.rating IS NOT NULL
                 AND r.created_at BETWEEN :start_date AND :end_date
                 {rating_filter}
+                {user_filter}
+                {session_filter}
             """
             
             counts_result = await self.db.execute(text(counts_query), params)
@@ -274,7 +286,9 @@ class AnalyticsService:
                 "negative_count": counts_row.negative_count if counts_row else 0,
                 "neutral_count": counts_row.neutral_count if counts_row else 0,
                 "period_start": start_date,
-                "period_end": end_date
+                "period_end": end_date,
+                "filtered_by_user": user_id,
+                "filtered_by_session": session_id
             }
             
         except Exception as e:
@@ -287,5 +301,7 @@ class AnalyticsService:
                 "negative_count": 0,
                 "neutral_count": 0,
                 "period_start": start_date,
-                "period_end": end_date
+                "period_end": end_date,
+                "filtered_by_user": user_id,
+                "filtered_by_session": session_id
             }
