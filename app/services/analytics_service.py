@@ -136,3 +136,156 @@ class AnalyticsService:
                 "period_start": start_date,
                 "period_end": end_date
             }
+            
+    async def get_rated_responses(
+        self,
+        organization_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        rating: Optional[int] = None,
+        limit: int = 50,
+        offset: int = 0
+    ) -> Dict[str, Any]:
+        """
+        Get rated responses for an organization
+        
+        Args:
+            organization_id: Organization ID
+            start_date: Optional start date filter
+            end_date: Optional end date filter
+            rating: Optional rating filter (-1, 0, 1)
+            limit: Maximum number of results to return
+            offset: Pagination offset
+            
+        Returns:
+            Dictionary with rated responses data
+        """
+        # Default to last 30 days if no dates provided
+        if not start_date:
+            start_date = datetime.utcnow() - timedelta(days=30)
+        if not end_date:
+            end_date = datetime.utcnow()
+        
+        logger.info(f"Getting rated responses for org {organization_id} from {start_date} to {end_date}")
+        
+        try:
+            # Build query parameters
+            params = {
+                "org_id": organization_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "limit": limit,
+                "offset": offset
+            }
+            
+            # Add rating filter if provided
+            rating_filter = ""
+            if rating is not None:
+                rating_filter = "AND r.rating = :rating"
+                params["rating"] = rating
+            
+            # Build query for rated responses
+            responses_query = f"""
+            SELECT 
+                r.request_id,
+                r.response_id,
+                u.user_id as external_user_id,
+                r.model,
+                r.rating,
+                r.rating_feedback,
+                r.rating_timestamp,
+                r.created_at,
+                r.completed_at,
+                -- Extract preview of input (handle different input formats)
+                CASE 
+                    WHEN jsonb_typeof(r.request_payload->'input') = 'string' 
+                    THEN SUBSTRING(CAST(r.request_payload->>'input' AS TEXT), 1, 100)
+                    WHEN jsonb_typeof(r.request_payload->'input') = 'array' 
+                    THEN SUBSTRING(CAST(r.request_payload->'input'->0->>'text' AS TEXT), 1, 100)
+                    ELSE 'Input not available'
+                END as input_preview,
+                -- Extract preview of output
+                CASE 
+                    WHEN jsonb_typeof(r.response_payload->'content') = 'array' 
+                    THEN SUBSTRING(CAST(r.response_payload->'content'->0->>'text' AS TEXT), 1, 100)
+                    ELSE 'Output not available'
+                END as output_preview
+            FROM 
+                requests r
+            JOIN 
+                users u ON r.user_id = u.id
+            WHERE 
+                u.organization_id = :org_id
+                AND r.rating IS NOT NULL
+                AND r.created_at BETWEEN :start_date AND :end_date
+                {rating_filter}
+            ORDER BY 
+                r.rating_timestamp DESC
+            LIMIT :limit OFFSET :offset
+            """
+            
+            # Execute query
+            responses_result = await self.db.execute(text(responses_query), params)
+            response_rows = responses_result.fetchall()
+            
+            # Get counts
+            counts_query = f"""
+            SELECT 
+                COUNT(*) as total_count,
+                COUNT(CASE WHEN r.rating = 1 THEN 1 END) as positive_count,
+                COUNT(CASE WHEN r.rating = -1 THEN 1 END) as negative_count,
+                COUNT(CASE WHEN r.rating = 0 THEN 1 END) as neutral_count
+            FROM 
+                requests r
+            JOIN 
+                users u ON r.user_id = u.id
+            WHERE 
+                u.organization_id = :org_id
+                AND r.rating IS NOT NULL
+                AND r.created_at BETWEEN :start_date AND :end_date
+                {rating_filter}
+            """
+            
+            counts_result = await self.db.execute(text(counts_query), params)
+            counts_row = counts_result.fetchone()
+            
+            # Format response
+            rated_responses = []
+            for row in response_rows:
+                response_data = {
+                    "request_id": row.request_id,
+                    "response_id": row.response_id,
+                    "user_id": row.external_user_id,
+                    "model": row.model,
+                    "rating": row.rating,
+                    "rating_feedback": row.rating_feedback,
+                    "rating_timestamp": row.rating_timestamp,
+                    "created_at": row.created_at,
+                    "completed_at": row.completed_at,
+                    "input_preview": row.input_preview or "Input not available",
+                    "output_preview": row.output_preview or "Output not available"
+                }
+                rated_responses.append(response_data)
+            
+            return {
+                "rated_responses": rated_responses,
+                "total_count": counts_row.total_count if counts_row else 0,
+                "positive_count": counts_row.positive_count if counts_row else 0,
+                "negative_count": counts_row.negative_count if counts_row else 0,
+                "neutral_count": counts_row.neutral_count if counts_row else 0,
+                "period_start": start_date,
+                "period_end": end_date
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting rated responses: {e}")
+            # Return empty result on error
+            return {
+                "rated_responses": [],
+                "total_count": 0,
+                "positive_count": 0,
+                "negative_count": 0,
+                "neutral_count": 0,
+                "period_start": start_date,
+                "period_end": end_date
+            }
