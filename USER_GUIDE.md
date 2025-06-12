@@ -1,4 +1,4 @@
-# Memory Box Inference Proxy: User Guide
+# Enterprise AI Governance Platform: User Guide
 
 ## Table of Contents
 
@@ -24,7 +24,7 @@
 
 ## Introduction
 
-The Memory Box Inference Proxy is a secure intermediary between your applications and OpenAI's Responses API. It adds enterprise-grade features like authentication, user management, usage tracking, and analytics while maintaining compatibility with OpenAI's API format.
+The Enterprise AI Governance Platform is a comprehensive solution for governing, securing, and monitoring AI interactions between your applications and OpenAI's Responses API. It provides enterprise-grade features including authentication, user management, usage tracking, analytics, and compliance controls while maintaining full compatibility with OpenAI's API format.
 
 This guide explains the key concepts, features, and patterns of the proxy to help you get the most out of its capabilities.
 
@@ -875,6 +875,6 @@ Response:
 ### Getting Help
 
 - 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/amotivv-inc/memory-box-inference/issues)
-- 💬 [Discussions](https://github.com/amotivv-inc/memory-box-inference/discussions)
+- 🐛 [Issue Tracker](https://github.com/amotivv-inc/enterprise-ai-governance/issues)
+- 💬 [Discussions](https://github.com/amotivv-inc/enterprise-ai-governance/discussions)
 - 📧 Email: ai@amotivv.com

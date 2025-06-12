@@ -1,14 +1,28 @@
 # Changelog
 
-All notable changes to the OpenAI Inference Proxy will be documented in this file.
+All notable changes to the Enterprise AI Governance Platform will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2025-06-12
 
 ### Added
-- Initial release of OpenAI Inference Proxy
+- First stable release of Enterprise AI Governance Platform
+- Production-ready deployment configuration
+- Comprehensive documentation suite including User Guide
+- Full test coverage
+
+### Security
+- All API keys encrypted at rest
+- JWT-based authentication
+- Organization isolation enforced
+- User-scoped access control
+
+## [0.1.0] - 2025-05-15
+
+### Added
+- Initial beta release
 - JWT-based authentication system
 - Organization and user management
 - API key encryption and secure storage
@@ -37,31 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JWT token validation with configurable expiration
 - Organization-level isolation
 - User-scoped access control
-
-## [1.0.0] - TBD
-
-### Added
-- First stable release
-- Production-ready deployment configuration
-- Comprehensive documentation suite
-- Full test coverage
-
-### Changed
-- TBD based on community feedback
-
-### Deprecated
-- None
-
-### Removed
-- None
-
-### Fixed
-- None
-
-### Security
-- All API keys encrypted at rest
-- JWT-based authentication
-- Organization isolation enforced
 
 ---
 
