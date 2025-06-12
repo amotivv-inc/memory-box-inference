@@ -878,3 +878,9 @@ Response:
 - 🐛 [Issue Tracker](https://github.com/amotivv-inc/enterprise-ai-governance/issues)
 - 💬 [Discussions](https://github.com/amotivv-inc/enterprise-ai-governance/discussions)
 - 📧 Email: ai@amotivv.com
+
+## License
+
+This software is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). This license requires that all modified versions must be released under the same license. Additionally, if you run a modified version of this software on a server and allow users to interact with it, you must make the source code available to those users.
+
+For more information about the AGPL-3.0 license, visit: https://www.gnu.org/licenses/agpl-3.0.html
