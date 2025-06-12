@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation suite including User Guide
 - Full test coverage
 
+### Changed
+- Updated license from Apache-2.0 to GNU Affero General Public License v3.0 (AGPL-3.0) for better intellectual property protection
+
 ### Security
 - All API keys encrypted at rest
 - JWT-based authentication

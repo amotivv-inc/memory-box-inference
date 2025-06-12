@@ -928,7 +928,11 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📄 License
 
-Apache License 2.0 - see [LICENSE](LICENSE) file for details.
+GNU Affero General Public License v3.0 (AGPL-3.0) - see [LICENSE](LICENSE) file for details.
+
+This software is licensed under the AGPL-3.0, which requires that all modified versions must be released under the same license. Additionally, if you run a modified version of this software on a server and allow users to interact with it, you must make the source code available to those users.
+
+For more information about the AGPL-3.0 license, visit: https://www.gnu.org/licenses/agpl-3.0.html
 
 ## 🆘 Support
 
