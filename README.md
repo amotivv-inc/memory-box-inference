@@ -1,6 +1,6 @@
-# OpenAI Inference Proxy
+# Enterprise AI Governance Platform
 
-A secure, enterprise-ready proxy for OpenAI's Responses API with advanced authentication, user management, usage tracking, and audit capabilities.
+A comprehensive enterprise solution for governing, securing, and monitoring AI interactions with OpenAI's Responses API, featuring advanced authentication, user management, usage tracking, and audit capabilities.
 
 ## 🌟 Overview
 
@@ -34,7 +34,7 @@ flowchart TD
     clients["Client Applications
     Web, Mobile, Desktop"]:::clients
     
-    proxy["OpenAI Inference Proxy"]:::proxy
+    proxy["Enterprise AI Governance Platform"]:::proxy
     
     auth["Authentication & Authorization
     • JWT validation
@@ -933,8 +933,8 @@ Apache License 2.0 - see [LICENSE](LICENSE) file for details.
 ## 🆘 Support
 
 - 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/amotivv-inc/openai-inference-proxy/issues)
-- 💬 [Discussions](https://github.com/amotivv-inc/openai-inference-proxy/discussions)
+- 🐛 [Issue Tracker](https://github.com/amotivv-inc/enterprise-ai-governance/issues)
+- 💬 [Discussions](https://github.com/amotivv-inc/enterprise-ai-governance/discussions)
 - 📧 Email: ai@amotivv.com
 
 ## 🙏 Acknowledgments
