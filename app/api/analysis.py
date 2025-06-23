@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 import logging
 
 from app.core import get_db, get_current_organization
+from app.core.dependencies import validate_user_id
 from app.models.analysis import (
     AnalysisRequest, AnalysisResponse, AnalysisError
 )
@@ -61,7 +62,7 @@ async def analyze_conversation(
     request: AnalysisRequest,
     db: AsyncSession = Depends(get_db),
     organization: Dict[str, Any] = Depends(get_current_organization),
-    x_user_id: Optional[str] = Header(None, description="User ID for tracking")
+    x_user_id: str = Depends(validate_user_id)
 ):
     """Analyze a conversation for intents, sentiments, or other categories"""
     try:

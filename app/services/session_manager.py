@@ -27,7 +27,14 @@ class SessionManagerService:
             
         Returns:
             User model instance
+            
+        Raises:
+            ValueError: If user_id is invalid (null, empty, or whitespace-only)
         """
+        # Validate user_id
+        if not user_id or user_id.lower() == "null" or user_id.strip() == "":
+            raise ValueError("Invalid user ID: User ID cannot be null, empty, or whitespace-only")
+            
         # Try to get existing user
         result = await self.db.execute(
             select(User)

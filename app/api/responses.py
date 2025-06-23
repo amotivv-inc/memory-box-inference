@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 
 from app.core import get_db, get_current_organization
+from app.core.dependencies import validate_user_id
 from app.core.openai_client import openai_client
 from app.core.security import decrypt_api_key
 from app.models.requests import (
@@ -88,7 +89,7 @@ async def create_response(
     request: Request,
     db: AsyncSession = Depends(get_db),
     organization: Dict[str, Any] = Depends(get_current_organization),
-    x_user_id: str = Header(..., description="User ID for tracking"),
+    x_user_id: str = Depends(validate_user_id),
     x_session_id: Optional[str] = Header(None, description="Optional session ID")
 ):
     """Proxy a request to OpenAI's Responses API."""

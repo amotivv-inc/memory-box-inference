@@ -64,6 +64,7 @@ htmlcov/
 # Project specific
 data/
 temp/
+scripts/add_analysis_tables.sql
 
 # Development/Debug scripts
 dev-scripts/
