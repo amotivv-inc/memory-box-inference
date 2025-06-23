@@ -81,6 +81,7 @@ flowchart TD
   - **Organization-wide keys**: Shared access for all users in an organization
 - 👥 **Automatic User Management**: Users are created on-demand when they make their first request
 - 🧠 **Persona Management**: Create and manage system prompts with user-scoped access control
+- 🔍 **Conversation Analysis**: Analyze conversations for intent, sentiment, and custom classifications
 - 📊 **Comprehensive Usage Tracking**: Monitor token usage and costs per user, session, and organization
 - 📈 **Persona Analytics**: Track usage, performance, and costs of different personas
 - ⭐ **Response Rating**: Users can rate AI responses with feedback
@@ -400,6 +401,151 @@ async function runConversation() {
 - The proxy's session tracking (`X-Session-ID` header) is separate from conversation context and is used only for analytics.
 - The proxy doesn't automatically manage conversation history - your client application must handle saving and providing `previous_response_id`.
 - Response IDs are also stored in the proxy's database and can be retrieved with the request ID if needed.
+
+### Analyzing Conversations
+
+The platform provides powerful conversation analysis capabilities to extract intents, sentiments, and other insights from user messages. This is particularly useful for routing support requests, prioritizing tickets, or understanding user needs.
+
+#### Intent Detection Example
+
+```bash
+# First, create a conversation
+curl -X POST http://localhost:8000/v1/responses \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "X-User-ID: alice@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "input": "I need help with my account. I can't log in and I've tried resetting my password twice.",
+    "stream": false
+  }'
+
+# Response includes a request_id (e.g., req_abc123)
+
+# Then analyze the conversation for intent
+curl -X POST http://localhost:8000/v1/analysis \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "X-User-ID: alice@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "req_abc123",
+    "config": {
+      "analysis_type": "intent",
+      "categories": [
+        {
+          "name": "account_access",
+          "description": "Issues with logging in, passwords, or account access",
+          "examples": ["can't log in", "password reset", "locked out"]
+        },
+        {
+          "name": "billing",
+          "description": "Questions about charges, payments, or subscriptions",
+          "examples": ["charge on my card", "cancel subscription", "refund"]
+        },
+        {
+          "name": "technical_issue",
+          "description": "Technical problems with the product or service",
+          "examples": ["error message", "doesn't work", "bug"]
+        },
+        {
+          "name": "feature_request",
+          "description": "Requests for new features or improvements",
+          "examples": ["add feature", "improve", "missing functionality"]
+        }
+      ],
+      "model": "gpt-4o-mini",
+      "include_reasoning": true
+    }
+  }'
+```
+
+#### Analysis Response
+
+```json
+{
+  "request_id": "req_abc123",
+  "response_id": "resp_xyz789",
+  "analysis_type": "intent",
+  "primary_category": "account_access",
+  "categories": [
+    {
+      "name": "account_access",
+      "confidence": 0.95,
+      "reasoning": "User explicitly mentions they 'can't log in' and have 'tried resetting password'"
+    },
+    {
+      "name": "billing",
+      "confidence": 0.05
+    },
+    {
+      "name": "technical_issue",
+      "confidence": 0.35
+    },
+    {
+      "name": "feature_request",
+      "confidence": 0.01
+    }
+  ],
+  "confidence": 0.95,
+  "reasoning": "The user is clearly having trouble accessing their account, specifically with logging in and password reset functionality.",
+  "metadata": {
+    "sentiment": "frustrated",
+    "urgency": "high",
+    "topics": ["login", "password_reset", "account_access"]
+  },
+  "analyzed_at": "2025-06-23T15:30:45Z",
+  "model_used": "gpt-4o-mini",
+  "tokens_used": 320,
+  "cost_usd": 0.000048,
+  "cached": false
+}
+```
+
+#### Reusable Analysis Configurations
+
+You can save analysis configurations for reuse:
+
+```bash
+# Create a reusable configuration
+curl -X POST http://localhost:8000/v1/analysis/configs \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "X-User-ID: alice@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Support Intent Classifier",
+    "description": "Classifies customer support requests by intent",
+    "config": {
+      "analysis_type": "intent",
+      "categories": [
+        {
+          "name": "account_access",
+          "description": "Issues with logging in, passwords, or account access",
+          "examples": ["can't log in", "password reset", "locked out"]
+        },
+        {
+          "name": "billing",
+          "description": "Questions about charges, payments, or subscriptions",
+          "examples": ["charge on my card", "cancel subscription", "refund"]
+        }
+      ],
+      "model": "gpt-4o-mini"
+    }
+  }'
+
+# Response includes a config_id (e.g., 550e8400-e29b-41d4-a716-446655440000)
+
+# Use the saved configuration
+curl -X POST http://localhost:8000/v1/analysis \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "X-User-ID: alice@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "req_def456",
+    "config_id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+For more details on analysis capabilities, see the [Analysis Guide](docs/analysis-guide.md).
 
 ### Rating Responses
 

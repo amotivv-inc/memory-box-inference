@@ -11,16 +11,18 @@
    - [Personas](#personas)
    - [Requests and Responses](#requests-and-responses)
    - [Conversation Context](#conversation-context)
+   - [Analysis](#analysis)
    - [Ratings](#ratings)
    - [Analytics](#analytics)
 3. [Authentication and Authorization](#authentication-and-authorization)
 4. [Making API Requests](#making-api-requests)
 5. [Managing Conversations](#managing-conversations)
 6. [Using Personas](#using-personas)
-7. [Rating Responses](#rating-responses)
-8. [Analytics and Monitoring](#analytics-and-monitoring)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+7. [Analyzing Conversations](#analyzing-conversations)
+8. [Rating Responses](#rating-responses)
+9. [Analytics and Monitoring](#analytics-and-monitoring)
+10. [Best Practices](#best-practices)
+11. [Troubleshooting](#troubleshooting)
 
 ## Introduction
 
@@ -219,6 +221,98 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 - The proxy's session tracking (X-Session-ID header) is separate from conversation context
 - Sessions are used for analytics and grouping, while `previous_response_id` is for AI memory
 - Response IDs are stored in the proxy's database and can be retrieved with the request ID if needed
+
+### Analysis
+
+**What it is:** Analysis is a powerful feature that extracts insights from conversations, such as user intent, sentiment, and custom classifications.
+
+**How it works:**
+- Analysis uses OpenAI models to classify conversations into predefined categories
+- Analysis can be performed on any request or response
+- Analysis configurations define the categories and classification parameters
+- Analysis results include confidence scores and reasoning
+- Analysis results are cached to improve performance and reduce costs
+
+**Types of analysis:**
+- **Intent detection**: Classify user messages by their purpose (e.g., technical support, billing inquiry)
+- **Sentiment analysis**: Determine if messages are positive, negative, or neutral
+- **Topic classification**: Identify the main topics discussed in a conversation
+- **Custom classification**: Create your own categories for specialized needs
+
+**How to use it:**
+1. Create a conversation using the `/v1/responses` endpoint
+2. Get the request ID or response ID from the response
+3. Send an analysis request to `/v1/analysis` with the ID and configuration
+4. Process the analysis results in your application
+
+**Example:**
+```json
+// Analysis request
+{
+  "id": "req_abc123def456",
+  "config": {
+    "analysis_type": "intent",
+    "categories": [
+      {
+        "name": "technical_support",
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
+      },
+      {
+        "name": "billing_inquiry",
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
+      }
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+  }
+}
+
+// Analysis response
+{
+  "request_id": "req_abc123def456",
+  "response_id": "resp_xyz789",
+  "analysis_type": "intent",
+  "primary_category": "technical_support",
+  "categories": [
+    {
+      "name": "technical_support",
+      "confidence": 0.92,
+      "reasoning": "User mentions app crashes and error messages"
+    },
+    {
+      "name": "billing_inquiry",
+      "confidence": 0.05
+    }
+  ],
+  "confidence": 0.92,
+  "reasoning": "The user is experiencing technical issues with the application",
+  "metadata": {
+    "sentiment": "frustrated",
+    "urgency": "high",
+    "topics": ["error_handling", "app_stability"]
+  },
+  "analyzed_at": "2025-06-23T15:30:45Z",
+  "model_used": "gpt-4o-mini",
+  "tokens_used": 320,
+  "cost_usd": 0.000048,
+  "cached": false
+}
+```
+
+**Configuration management:**
+- Save reusable configurations with the `/v1/analysis/configs` endpoint
+- Retrieve configurations by ID or name
+- Use saved configurations by referencing their ID in analysis requests
+- Override specific fields in saved configurations as needed
+
+**Benefits:**
+- **Routing**: Automatically route conversations to the right team or system
+- **Prioritization**: Identify urgent issues that need immediate attention
+- **Analytics**: Gain insights into common user intents and sentiments
+- **Integration**: Connect with CRM, ticketing, or support systems based on intent
+- **Personalization**: Tailor experiences based on detected user needs
 
 ### Ratings
 
@@ -547,6 +641,382 @@ Content-Type: application/json
 GET /v1/analytics/personas/123e4567-e89b-12d3-a456-426614174000
 Authorization: Bearer YOUR_JWT_TOKEN
 X-User-ID: user@example.com
+```
+
+## Analyzing Conversations
+
+The Analysis feature allows you to extract valuable insights from user messages, such as intent, sentiment, and custom classifications. This section explains how to use this feature effectively.
+
+### Basic Analysis
+
+To analyze a conversation:
+
+1. First, create a conversation using the `/v1/responses` endpoint
+2. Get the request ID or response ID from the response
+3. Send an analysis request to the `/v1/analysis` endpoint
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_abc123def456",
+  "config": {
+    "analysis_type": "intent",
+    "categories": [
+      {
+        "name": "technical_support",
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
+      },
+      {
+        "name": "billing_inquiry",
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
+      },
+      {
+        "name": "feature_request",
+        "description": "Requests for new features",
+        "examples": ["add feature", "would be nice if", "suggestion"]
+      },
+      {
+        "name": "general_inquiry",
+        "description": "General questions about the product",
+        "examples": ["how do I", "where is", "what is"]
+      }
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3,
+    "include_reasoning": true
+  }
+}
+```
+
+The response will include the primary category, confidence scores, and reasoning:
+
+```json
+{
+  "request_id": "req_abc123def456",
+  "response_id": "resp_xyz789",
+  "analysis_type": "intent",
+  "primary_category": "technical_support",
+  "categories": [
+    {
+      "name": "technical_support",
+      "confidence": 0.92,
+      "reasoning": "User mentions app crashes and error messages"
+    },
+    {
+      "name": "billing_inquiry",
+      "confidence": 0.05
+    },
+    {
+      "name": "feature_request",
+      "confidence": 0.02
+    },
+    {
+      "name": "general_inquiry",
+      "confidence": 0.01
+    }
+  ],
+  "confidence": 0.92,
+  "reasoning": "The user is experiencing technical issues with the application",
+  "metadata": {
+    "sentiment": "frustrated",
+    "urgency": "high",
+    "topics": ["error_handling", "app_stability"]
+  },
+  "analyzed_at": "2025-06-23T15:30:45Z",
+  "model_used": "gpt-4o-mini",
+  "tokens_used": 320,
+  "cost_usd": 0.000048,
+  "cached": false
+}
+```
+
+### Creating Reusable Configurations
+
+For repeated analyses with the same categories, create a reusable configuration:
+
+```http
+POST /v1/analysis/configs
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "name": "Support Intent Classifier",
+  "description": "Classifies customer support requests by intent",
+  "config": {
+    "analysis_type": "intent",
+    "categories": [
+      {
+        "name": "technical_support",
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
+      },
+      {
+        "name": "billing_inquiry",
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
+      }
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+  }
+}
+```
+
+Then use the saved configuration by its ID:
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_def456",
+  "config_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+You can also retrieve a configuration by name:
+
+```http
+GET /v1/analysis/configs/by-name/Support%20Intent%20Classifier
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+```
+
+### Intent Detection Example
+
+Intent detection is useful for routing conversations to the appropriate team or system. For example, to detect if a user needs technical support or has a billing question:
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_abc123def456",
+  "config": {
+    "analysis_type": "intent",
+    "categories": [
+      {
+        "name": "technical_support",
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
+      },
+      {
+        "name": "billing_inquiry",
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
+      }
+    ]
+  }
+}
+```
+
+Based on the result, you can route the conversation to the appropriate team:
+
+```javascript
+// Example JavaScript code for routing
+async function routeConversation(requestId) {
+  const analysisResponse = await fetch('/v1/analysis', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_JWT_TOKEN',
+      'X-User-ID': 'user@example.com',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      id: requestId,
+      config_id: 'your-intent-config-id'
+    })
+  });
+  
+  const analysis = await analysisResponse.json();
+  
+  switch (analysis.primary_category) {
+    case 'technical_support':
+      return routeToTechnicalSupport(requestId);
+    case 'billing_inquiry':
+      return routeToBillingTeam(requestId);
+    default:
+      return routeToGeneralSupport(requestId);
+  }
+}
+```
+
+### Sentiment Analysis
+
+Sentiment analysis helps identify the emotional tone of a message:
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_abc123def456",
+  "config": {
+    "analysis_type": "sentiment",
+    "categories": [
+      {
+        "name": "positive",
+        "description": "Positive sentiment",
+        "examples": ["great", "love it", "excellent", "thank you"]
+      },
+      {
+        "name": "neutral",
+        "description": "Neutral sentiment",
+        "examples": ["okay", "fine", "alright", "understood"]
+      },
+      {
+        "name": "negative",
+        "description": "Negative sentiment",
+        "examples": ["bad", "terrible", "frustrated", "disappointed"]
+      }
+    ]
+  }
+}
+```
+
+### Advanced Configuration Options
+
+The analysis feature supports several advanced options:
+
+- **Custom Prompts**: Provide a custom prompt template for specialized analysis
+- **Multi-label Classification**: Allow multiple primary categories
+- **Confidence Threshold**: Set a minimum confidence threshold
+- **Model Selection**: Choose between different OpenAI models
+- **Temperature**: Adjust the randomness of the analysis
+
+Example with advanced options:
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_abc123def456",
+  "config": {
+    "analysis_type": "custom",
+    "categories": [
+      {"name": "urgent", "description": "Requires immediate attention"},
+      {"name": "important", "description": "Important but not urgent"},
+      {"name": "routine", "description": "Regular inquiry"}
+    ],
+    "model": "gpt-4o",
+    "temperature": 0.2,
+    "multi_label": true,
+    "confidence_threshold": 0.5,
+    "custom_prompt": "Analyze this conversation and determine the urgency level:\n\nUser: {user_input}\nAI: {ai_response}\n\nCategories: {categories}\n\nProvide detailed reasoning."
+  }
+}
+```
+
+### Caching and Performance
+
+Analysis results are automatically cached to improve performance and reduce costs. When you analyze the same request with the same configuration, the cached result is returned:
+
+```json
+{
+  "request_id": "req_abc123def456",
+  "response_id": "resp_xyz789",
+  "analysis_type": "intent",
+  "primary_category": "technical_support",
+  "categories": [...],
+  "confidence": 0.92,
+  "reasoning": "The user is experiencing technical issues with the application",
+  "metadata": {...},
+  "analyzed_at": "2025-06-23T15:30:45Z",
+  "model_used": "gpt-4o-mini",
+  "tokens_used": 320,
+  "cost_usd": 0.000048,
+  "cached": true
+}
+```
+
+### Integration Examples
+
+#### Python Integration
+
+```python
+import requests
+
+def analyze_intent(request_id, jwt_token, user_id):
+    response = requests.post(
+        "http://localhost:8000/v1/analysis",
+        headers={
+            "Authorization": f"Bearer {jwt_token}",
+            "X-User-ID": user_id,
+            "Content-Type": "application/json"
+        },
+        json={
+            "id": request_id,
+            "config_id": "your-intent-config-id"
+        }
+    )
+    
+    if response.status_code == 200:
+        result = response.json()
+        print(f"Primary intent: {result['primary_category']}")
+        print(f"Confidence: {result['confidence']:.2%}")
+        print(f"Reasoning: {result['reasoning']}")
+        return result
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+```
+
+#### JavaScript Integration
+
+```javascript
+async function analyzeConversation(requestId) {
+  try {
+    const response = await fetch('http://localhost:8000/v1/analysis', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_JWT_TOKEN',
+        'X-User-ID': 'user@example.com',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: requestId,
+        config_id: 'your-config-id'
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`Primary category: ${result.primary_category}`);
+      console.log(`Confidence: ${result.confidence * 100}%`);
+      
+      // Take action based on intent
+      if (result.primary_category === 'technical_support' && result.confidence > 0.8) {
+        // Route to technical support
+      }
+      
+      return result;
+    } else {
+      console.error(`Error: ${response.status}`);
+      console.error(await response.text());
+      return null;
+    }
+  } catch (error) {
+    console.error('Analysis failed:', error);
+    return null;
+  }
+}
 ```
 
 ## Rating Responses
