@@ -26,6 +26,7 @@ class Organization(Base):
     api_keys = relationship("APIKey", back_populates="organization", cascade="all, delete-orphan")
     users = relationship("User", back_populates="organization", cascade="all, delete-orphan")
     personas = relationship("Persona", back_populates="organization", cascade="all, delete-orphan")
+    analysis_configs = relationship("AnalysisConfig", back_populates="organization", cascade="all, delete-orphan")
 
 
 class APIKey(Base):
@@ -64,6 +65,7 @@ class User(Base):
     requests = relationship("Request", back_populates="user")
     api_keys = relationship("APIKey", back_populates="user")
     personas = relationship("Persona", back_populates="user")
+    created_analysis_configs = relationship("AnalysisConfig", back_populates="created_by_user")
     
     # Constraints
     __table_args__ = (
@@ -114,6 +116,7 @@ class Request(Base):
     api_key = relationship("APIKey", back_populates="requests")
     persona = relationship("Persona", back_populates="requests")
     usage_logs = relationship("UsageLog", back_populates="request", cascade="all, delete-orphan")
+    analysis_results = relationship("AnalysisResult", back_populates="request", cascade="all, delete-orphan")
     
     # Constraints
     __table_args__ = (
@@ -162,3 +165,51 @@ class Persona(Base):
     __table_args__ = (
         UniqueConstraint('organization_id', 'name', name='_org_persona_name_uc'),
     )
+
+
+class AnalysisConfig(Base):
+    """Analysis configurations for conversation analysis"""
+    __tablename__ = "analysis_configs"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    config = Column(JSON, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    organization = relationship("Organization", back_populates="analysis_configs")
+    created_by_user = relationship("User", back_populates="created_analysis_configs")
+    analysis_results = relationship("AnalysisResult", back_populates="analysis_config")
+    
+    # Constraints
+    __table_args__ = (
+        UniqueConstraint('organization_id', 'name', name='_org_analysis_config_name_uc'),
+    )
+
+
+class AnalysisResult(Base):
+    """Results of analysis performed on requests/responses"""
+    __tablename__ = "analysis_results"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    request_id = Column(UUID(as_uuid=True), ForeignKey("requests.id"), nullable=False)
+    analysis_config_id = Column(UUID(as_uuid=True), ForeignKey("analysis_configs.id"), nullable=True)
+    config_snapshot = Column(JSON, nullable=False)
+    analysis_type = Column(String(100), nullable=True)
+    results = Column(JSON, nullable=False)
+    model_used = Column(String(100), nullable=True)
+    tokens_used = Column(Integer, nullable=True)
+    cost_usd = Column(DECIMAL(10, 6), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    request = relationship("Request", back_populates="analysis_results")
+    analysis_config = relationship("AnalysisConfig", back_populates="analysis_results")
+    
+    # Removed unique constraint to allow multiple analyses with the same config
+    # An index is added in the migration script for performance

@@ -9,7 +9,11 @@ import sys
 
 from app.config import settings, validate_settings
 from app.core import init_db, close_db
-from app.api import responses_router, users_router, api_keys_router, analytics_router, personas_router
+from app.api import (
+    responses_router, users_router, api_keys_router, 
+    analytics_router, personas_router, analysis_router, 
+    analysis_configs_router
+)
 from app.models.requests import ErrorResponse, ErrorDetail
 
 # Configure logging
@@ -50,7 +54,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.project_name,
     description="""
-    A secure proxy for OpenAI's Responses API with JWT authentication, usage tracking, and response rating.
+    A secure proxy for OpenAI's Responses API with JWT authentication, usage tracking, response rating, and conversation analysis.
     
     ## Features
     
@@ -59,6 +63,8 @@ app = FastAPI(
     - **API Key Management**: Create and manage API keys
     - **Usage Tracking**: Track token usage and costs
     - **Response Rating**: Rate responses for quality tracking
+    - **Conversation Analysis**: Analyze conversations for intents, sentiments, topics, and custom classifications
+    - **Analysis Configurations**: Create reusable analysis templates for consistent classification
     
     ## Authentication
     
@@ -85,6 +91,14 @@ app = FastAPI(
         {
             "name": "personas",
             "description": "Persona management endpoints for creating and managing system prompts"
+        },
+        {
+            "name": "analysis",
+            "description": "Conversation analysis endpoints for intent detection, sentiment analysis, and custom classifications"
+        },
+        {
+            "name": "analysis-configs",
+            "description": "Analysis configuration management endpoints for creating reusable analysis templates"
         }
     ],
     lifespan=lifespan,
@@ -170,6 +184,16 @@ app.include_router(
 
 app.include_router(
     personas_router,
+    prefix=settings.api_prefix
+)
+
+app.include_router(
+    analysis_configs_router,
+    prefix=settings.api_prefix
+)
+
+app.include_router(
+    analysis_router,
     prefix=settings.api_prefix
 )
 
