@@ -211,7 +211,5 @@ class AnalysisResult(Base):
     request = relationship("Request", back_populates="analysis_results")
     analysis_config = relationship("AnalysisConfig", back_populates="analysis_results")
     
-    # Constraints
-    __table_args__ = (
-        UniqueConstraint('request_id', 'analysis_config_id', name='_request_config_uc'),
-    )
+    # Removed unique constraint to allow multiple analyses with the same config
+    # An index is added in the migration script for performance

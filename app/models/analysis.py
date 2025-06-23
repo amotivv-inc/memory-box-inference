@@ -72,6 +72,7 @@ class AnalysisRequest(BaseModel):
     config_id: Optional[uuid.UUID] = Field(default=None, description="ID of saved configuration to use")
     config: Optional[AnalysisConfigData] = Field(default=None, description="Inline configuration (if not using config_id)")
     config_overrides: Optional[Dict[str, Any]] = Field(default=None, description="Override specific config fields")
+    use_cache: bool = Field(default=False, description="Whether to use cached results if available")
 
 
 class CategoryResult(BaseModel):

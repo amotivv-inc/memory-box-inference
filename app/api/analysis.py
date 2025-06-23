@@ -28,7 +28,7 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
     2. An inline configuration (config)
     3. Both (inline config overrides saved config)
     
-    The analysis is cached - identical analyses on the same request will return cached results.
+    By default, each analysis will be performed fresh. Set use_cache=true to use cached results when available.
     """,
     responses={
         200: {
@@ -82,7 +82,8 @@ async def analyze_conversation(
             config=request.config.model_dump() if request.config else None,
             config_overrides=request.config_overrides,
             organization_id=organization["organization_id"],
-            user_id=x_user_id
+            user_id=x_user_id,
+            use_cache=request.use_cache
         )
         
         return AnalysisResponse(**result)

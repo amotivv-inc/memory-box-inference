@@ -1,251 +1,58 @@
-# Conversation Analysis Guide
+# Analysis Guide
 
-This guide explains how to use the conversation analysis feature in the OpenAI Inference Proxy to analyze conversations for intents, sentiments, topics, and custom classifications.
+This guide explains how to use the conversation analysis feature to extract insights from user messages, such as intent, sentiment, and custom classifications.
 
 ## Overview
 
 The analysis feature allows you to:
-- Analyze conversations for intent detection (e.g., support routing)
-- Perform sentiment analysis on user messages
-- Create custom classification categories
-- Save reusable analysis configurations
-- Cache results to reduce costs
-- Analyze both current and historical conversations
 
-## Key Concepts
+1. Classify user messages into predefined categories
+2. Detect user intent
+3. Analyze sentiment
+4. Extract topics and other metadata
+5. Create and manage reusable analysis configurations
 
-### Analysis Configurations
-Reusable templates that define:
-- Analysis type (intent, sentiment, topic, etc.)
-- Categories to classify into
-- Model settings (temperature, model choice)
-- Output preferences (reasoning, confidence scores)
+## Basic Usage
 
-### Analysis Results
-Each analysis returns:
-- Primary category detected
-- Confidence scores for all categories
-- Reasoning for the classification
-- Metadata (sentiment, urgency, topics)
-- Cost and token usage information
+To analyze a conversation:
 
-## API Endpoints
+1. First, create a conversation using the `/v1/responses` endpoint
+2. Get the request ID or response ID from the response
+3. Send an analysis request to the `/v1/analysis` endpoint
 
-### 1. Perform Analysis
-```
+```http
 POST /v1/analysis
-```
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
 
-Analyze a conversation using either a saved configuration or inline configuration.
-
-**Request Body:**
-```json
 {
-  "id": "req_abc123",  // Request ID or Response ID
-  "config_id": "550e8400-e29b-41d4-a716-446655440000",  // Optional: saved config
-  "config": {  // Optional: inline configuration
-    "analysis_type": "intent",
-    "categories": [
-      {
-        "name": "technical_support",
-        "description": "Technical issues or bugs",
-        "examples": ["app crashes", "error message", "not working"]
-      }
-    ],
-    "model": "gpt-4o-mini",
-    "temperature": 0.3
-  },
-  "config_overrides": {  // Optional: override specific fields
-    "temperature": 0.5
-  }
-}
-```
-
-### 2. Create Configuration
-```
-POST /v1/analysis/configs
-```
-
-Save a reusable analysis configuration.
-
-**Request Body:**
-```json
-{
-  "name": "Customer Intent Classifier",
-  "description": "Classifies customer intents for support routing",
+  "id": "req_abc123def456",
   "config": {
     "analysis_type": "intent",
     "categories": [
       {
         "name": "technical_support",
-        "description": "Technical issues, bugs, or errors",
-        "examples": ["app crashes", "error message", "not working"]
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
       },
       {
         "name": "billing_inquiry",
-        "description": "Questions about billing or payments",
-        "examples": ["charged twice", "cancel subscription", "payment failed"]
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
       }
     ],
     "model": "gpt-4o-mini",
-    "temperature": 0.3,
-    "include_reasoning": true,
-    "include_confidence": true,
-    "confidence_threshold": 0.7,
-    "multi_label": false
+    "temperature": 0.3
   }
 }
 ```
 
-### 3. List Configurations
-```
-GET /v1/analysis/configs?is_active=true&page=1&page_size=50
-```
+The response will include the primary category, confidence scores, and reasoning:
 
-### 4. Get Configuration
-```
-GET /v1/analysis/configs/{config_id}
-```
-
-### 5. Update Configuration
-```
-PUT /v1/analysis/configs/{config_id}
-```
-
-### 6. Delete Configuration
-```
-DELETE /v1/analysis/configs/{config_id}
-```
-
-## Common Use Cases
-
-### 1. Customer Support Intent Classification
-```python
-# Create a support intent classifier
-config = {
-    "name": "Support Intent Classifier",
-    "config": {
-        "analysis_type": "intent",
-        "categories": [
-            {
-                "name": "technical_support",
-                "description": "Technical issues requiring engineering help",
-                "examples": ["bug", "error", "crash", "not working"]
-            },
-            {
-                "name": "billing_inquiry",
-                "description": "Billing and payment questions",
-                "examples": ["invoice", "charge", "payment", "subscription"]
-            },
-            {
-                "name": "feature_request",
-                "description": "New feature suggestions",
-                "examples": ["add", "implement", "would be nice", "suggestion"]
-            },
-            {
-                "name": "account_management",
-                "description": "Account-related issues",
-                "examples": ["login", "password", "email", "profile"]
-            }
-        ],
-        "model": "gpt-4o-mini",
-        "temperature": 0.3
-    }
-}
-```
-
-### 2. Sentiment Analysis
-```python
-# Inline sentiment analysis
-analysis_request = {
-    "id": "req_123",
-    "config": {
-        "analysis_type": "sentiment",
-        "categories": [
-            {
-                "name": "positive",
-                "description": "Positive sentiment",
-                "examples": ["great", "love it", "excellent", "thank you"]
-            },
-            {
-                "name": "neutral",
-                "description": "Neutral sentiment",
-                "examples": ["okay", "fine", "alright", "understood"]
-            },
-            {
-                "name": "negative",
-                "description": "Negative sentiment",
-                "examples": ["bad", "terrible", "frustrated", "disappointed"]
-            }
-        ],
-        "model": "gpt-4o-mini",
-        "temperature": 0.3
-    }
-}
-```
-
-### 3. Urgency Detection
-```python
-# Detect urgency level for prioritization
-urgency_config = {
-    "analysis_type": "urgency",
-    "categories": [
-        {
-            "name": "critical",
-            "description": "Requires immediate attention",
-            "examples": ["emergency", "urgent", "ASAP", "system down"]
-        },
-        {
-            "name": "high",
-            "description": "Important but not critical",
-            "examples": ["soon", "today", "important", "priority"]
-        },
-        {
-            "name": "medium",
-            "description": "Normal priority",
-            "examples": ["when possible", "this week", "please help"]
-        },
-        {
-            "name": "low",
-            "description": "Can wait",
-            "examples": ["no rush", "whenever", "FYI", "just curious"]
-        }
-    ]
-}
-```
-
-### 4. Topic Classification
-```python
-# Classify conversation topics
-topic_config = {
-    "analysis_type": "topic",
-    "categories": [
-        {
-            "name": "product_features",
-            "description": "Discussions about product functionality",
-            "examples": ["how does", "feature", "capability", "function"]
-        },
-        {
-            "name": "pricing",
-            "description": "Pricing and cost discussions",
-            "examples": ["cost", "price", "expensive", "budget"]
-        },
-        {
-            "name": "integration",
-            "description": "Integration with other systems",
-            "examples": ["API", "integrate", "connect", "webhook"]
-        }
-    ],
-    "multi_label": true  // Can have multiple topics
-}
-```
-
-## Response Format
-
-### Successful Analysis Response
 ```json
 {
-  "request_id": "req_abc123",
+  "request_id": "req_abc123def456",
   "response_id": "resp_xyz789",
   "analysis_type": "intent",
   "primary_category": "technical_support",
@@ -257,187 +64,251 @@ topic_config = {
     },
     {
       "name": "billing_inquiry",
-      "confidence": 0.05,
-      "reasoning": null
+      "confidence": 0.05
     }
   ],
   "confidence": 0.92,
   "reasoning": "The user is experiencing technical issues with the application",
   "metadata": {
-    "sentiment": "negative",
+    "sentiment": "frustrated",
     "urgency": "high",
     "topics": ["error_handling", "app_stability"]
   },
-  "analyzed_at": "2024-01-15T10:30:00Z",
+  "analyzed_at": "2025-06-23T15:30:45Z",
   "model_used": "gpt-4o-mini",
-  "tokens_used": 245,
-  "cost_usd": 0.000037,
+  "tokens_used": 320,
+  "cost_usd": 0.000048,
   "cached": false
+}
+```
+
+## Creating Reusable Configurations
+
+For repeated analyses with the same categories, create a reusable configuration:
+
+```http
+POST /v1/analysis/configs
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "name": "Support Intent Classifier",
+  "description": "Classifies customer support requests by intent",
+  "config": {
+    "analysis_type": "intent",
+    "categories": [
+      {
+        "name": "technical_support",
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
+      },
+      {
+        "name": "billing_inquiry",
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
+      }
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+  }
+}
+```
+
+Then use the saved configuration by its ID:
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_def456",
+  "config_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+## Caching Behavior
+
+By default, each analysis request will perform a fresh analysis, even if you've analyzed the same conversation with the same configuration before. This ensures you always get the most up-to-date results and allows for iterative development of analysis configurations.
+
+If you want to use cached results when available (to save time and reduce costs), you can set the `use_cache` parameter to `true`:
+
+```json
+{
+  "id": "req_abc123",
+  "config_id": "550e8400-e29b-41d4-a716-446655440000",
+  "use_cache": true
+}
+```
+
+When `use_cache` is `true`, the system will:
+1. Check if this conversation has been analyzed before with the exact same configuration
+2. If found, return the cached result immediately (with `cached: true` in the response)
+3. If not found, perform a fresh analysis
+
+This can be useful in production environments to reduce costs and improve response times.
+
+## Updating Configurations
+
+You can update existing configurations at any time:
+
+```http
+PUT /v1/analysis/configs/550e8400-e29b-41d4-a716-446655440000
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "name": "Updated Support Intent Classifier",
+  "description": "Updated description",
+  "config": {
+    "analysis_type": "intent",
+    "categories": [
+      {
+        "name": "technical_support",
+        "description": "Technical issues requiring engineering help",
+        "examples": ["bug", "error", "crash", "not working"]
+      },
+      {
+        "name": "billing_inquiry",
+        "description": "Billing and payment questions",
+        "examples": ["invoice", "charge", "payment", "subscription"]
+      },
+      {
+        "name": "feature_request",
+        "description": "Requests for new features",
+        "examples": ["add feature", "would be nice if", "suggestion"]
+      }
+    ],
+    "model": "gpt-4o-mini",
+    "temperature": 0.3
+  }
+}
+```
+
+After updating a configuration, you can immediately use it to analyze conversations, including those that were previously analyzed with the old configuration. The system will perform a fresh analysis with the updated configuration.
+
+## Advanced Configuration Options
+
+The analysis feature supports several advanced options:
+
+- **Custom Prompts**: Provide a custom prompt template for specialized analysis
+- **Multi-label Classification**: Allow multiple primary categories
+- **Confidence Threshold**: Set a minimum confidence threshold
+- **Model Selection**: Choose between different OpenAI models
+- **Temperature**: Adjust the randomness of the analysis
+
+Example with advanced options:
+
+```http
+POST /v1/analysis
+Authorization: Bearer YOUR_JWT_TOKEN
+X-User-ID: user@example.com
+Content-Type: application/json
+
+{
+  "id": "req_abc123def456",
+  "config": {
+    "analysis_type": "custom",
+    "categories": [
+      {"name": "urgent", "description": "Requires immediate attention"},
+      {"name": "important", "description": "Important but not urgent"},
+      {"name": "routine", "description": "Regular inquiry"}
+    ],
+    "model": "gpt-4o",
+    "temperature": 0.2,
+    "multi_label": true,
+    "confidence_threshold": 0.5,
+    "custom_prompt": "Analyze this conversation and determine the urgency level:\n\nUser: {user_input}\nAI: {ai_response}\n\nCategories: {categories}\n\nProvide detailed reasoning."
+  }
+}
+```
+
+## Integration Examples
+
+### Python Integration
+
+```python
+import requests
+
+def analyze_intent(request_id, jwt_token, user_id):
+    response = requests.post(
+        "http://localhost:8000/v1/analysis",
+        headers={
+            "Authorization": f"Bearer {jwt_token}",
+            "X-User-ID": user_id,
+            "Content-Type": "application/json"
+        },
+        json={
+            "id": request_id,
+            "config_id": "your-intent-config-id",
+            "use_cache": False  # Always perform fresh analysis
+        }
+    )
+    
+    if response.status_code == 200:
+        result = response.json()
+        print(f"Primary intent: {result['primary_category']}")
+        print(f"Confidence: {result['confidence']:.2%}")
+        print(f"Reasoning: {result['reasoning']}")
+        return result
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+```
+
+### JavaScript Integration
+
+```javascript
+async function analyzeConversation(requestId) {
+  try {
+    const response = await fetch('http://localhost:8000/v1/analysis', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer YOUR_JWT_TOKEN',
+        'X-User-ID': 'user@example.com',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        id: requestId,
+        config_id: 'your-config-id',
+        use_cache: true  // Use cached results when available
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`Primary category: ${result.primary_category}`);
+      console.log(`Confidence: ${result.confidence * 100}%`);
+      console.log(`Cached: ${result.cached ? 'Yes' : 'No'}`);
+      
+      // Take action based on intent
+      if (result.primary_category === 'technical_support' && result.confidence > 0.8) {
+        // Route to technical support
+      }
+      
+      return result;
+    } else {
+      console.error(`Error: ${response.status}`);
+      console.error(await response.text());
+      return null;
+    }
+  } catch (error) {
+    console.error('Analysis failed:', error);
+    return null;
+  }
 }
 ```
 
 ## Best Practices
 
-### 1. Category Design
-- **Clear Descriptions**: Make category descriptions specific and unambiguous
-- **Good Examples**: Provide 3-5 representative examples per category
-- **Mutual Exclusivity**: For single-label classification, ensure categories don't overlap
-- **Comprehensive Coverage**: Include a "general" or "other" category when needed
-
-### 2. Model Selection
-- **gpt-4o-mini**: Fast and cost-effective for most classifications
-- **gpt-4o**: Better accuracy for complex or nuanced classifications
-- **Temperature**: Use lower values (0.2-0.3) for consistent results
-
-### 3. Configuration Management
-- **Reuse Configurations**: Save commonly used configurations for consistency
-- **Version Control**: Update configurations rather than creating new ones
-- **Naming Convention**: Use descriptive names like "Support_Intent_v2"
-
-### 4. Performance Optimization
-- **Caching**: Results are automatically cached for identical analyses
-- **Batch Processing**: Analyze multiple conversations with the same config
-- **Selective Fields**: Only request fields you need (reasoning, metadata)
-
-## Integration Examples
-
-### Python Client
-```python
-import httpx
-import asyncio
-
-class AnalysisClient:
-    def __init__(self, base_url, jwt_token):
-        self.base_url = base_url
-        self.headers = {
-            "Authorization": f"Bearer {jwt_token}",
-            "Content-Type": "application/json"
-        }
-    
-    async def analyze(self, request_id, config_id=None, config=None):
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/v1/analysis",
-                headers=self.headers,
-                json={
-                    "id": request_id,
-                    "config_id": config_id,
-                    "config": config
-                }
-            )
-            return response.json()
-
-# Usage
-client = AnalysisClient("https://api.example.com", "your-jwt-token")
-result = await client.analyze("req_123", config_id="your-config-id")
-```
-
-### JavaScript/TypeScript
-```typescript
-async function analyzeConversation(
-  requestId: string,
-  configId?: string,
-  config?: AnalysisConfig
-): Promise<AnalysisResponse> {
-  const response = await fetch('https://api.example.com/v1/analysis', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${JWT_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      id: requestId,
-      config_id: configId,
-      config: config
-    })
-  });
-  
-  return response.json();
-}
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **404 Not Found**
-   - Verify the request/response ID exists
-   - Check you're using the correct ID format
-
-2. **403 Forbidden**
-   - Ensure the request belongs to your organization
-   - Verify JWT token is valid
-
-3. **400 Bad Request**
-   - Check configuration structure
-   - Ensure either config_id or config is provided
-   - Validate category definitions
-
-4. **High Costs**
-   - Use caching (automatic for identical analyses)
-   - Choose appropriate model (gpt-4o-mini vs gpt-4o)
-   - Limit token usage with max_tokens setting
-
-### Debugging Tips
-
-1. **Test with Simple Configs**: Start with 2-3 categories
-2. **Use Examples**: Test your categories with known inputs
-3. **Check Logs**: Review application logs for detailed errors
-4. **Validate JSON**: Ensure proper JSON formatting
-
-## Advanced Features
-
-### Custom Prompts
-```json
-{
-  "config": {
-    "custom_prompt": "Analyze this conversation:\nUser: {user_input}\nAI: {ai_response}\n\nClassify into: {categories}\n\nProvide detailed reasoning.",
-    "categories": [...]
-  }
-}
-```
-
-### Multi-Label Classification
-```json
-{
-  "config": {
-    "multi_label": true,
-    "confidence_threshold": 0.5,
-    "categories": [...]
-  }
-}
-```
-
-### Additional Fields
-```json
-{
-  "config": {
-    "additional_fields": {
-      "extract_entities": true,
-      "detect_language": true,
-      "custom_analysis": "specific requirements"
-    }
-  }
-}
-```
-
-## Cost Considerations
-
-- **Caching**: Identical analyses return cached results at no additional cost
-- **Model Choice**: gpt-4o-mini is ~10x cheaper than gpt-4o
-- **Token Usage**: Varies by conversation length and configuration complexity
-- **Batch Processing**: No discount, but easier to track costs
-
-## Security
-
-- All analyses are scoped to your organization
-- Configurations are private to your organization
-- Results are stored encrypted in the database
-- JWT authentication required for all endpoints
-
-## Limitations
-
-- Maximum conversation length depends on model context window
-- Analysis accuracy depends on category design and examples
-- Real-time analysis may add 1-3 seconds latency
-- Cached results expire after 30 days (configurable)
+1. **Start with broad categories**: Begin with a few high-level categories and refine as needed
+2. **Include examples**: Provide clear examples for each category to improve classification accuracy
+3. **Use the right model**: For simple classifications, `gpt-4o-mini` is usually sufficient; for complex analyses, consider `gpt-4o`
+4. **Adjust temperature**: Lower values (0.0-0.3) provide more consistent results; higher values allow more creativity
+5. **Test and iterate**: Continuously test and refine your configurations based on real-world data
+6. **Use caching strategically**: Enable caching in production for efficiency, disable during development for iteration
+7. **Monitor costs**: Keep track of token usage and costs, especially for high-volume applications

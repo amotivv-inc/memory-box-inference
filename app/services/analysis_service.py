@@ -35,7 +35,8 @@ class AnalysisService:
         config: Optional[Dict[str, Any]] = None,
         config_overrides: Optional[Dict[str, Any]] = None,
         organization_id: str = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        use_cache: bool = False
     ) -> Dict[str, Any]:
         """
         Analyze a request/response for intents, sentiments, or other categories
@@ -47,6 +48,7 @@ class AnalysisService:
             config_overrides: Override specific config fields
             organization_id: Organization ID for access control
             user_id: User ID for tracking
+            use_cache: Whether to use cached results if available
             
         Returns:
             Analysis results
@@ -65,12 +67,13 @@ class AnalysisService:
             config_id, config, config_overrides, organization_id
         )
         
-        # Check cache
-        config_hash = self._hash_config(final_config)
-        cached_result = await self._get_cached_result(request_data.id, config_hash)
-        if cached_result:
-            return self._format_cached_result(cached_result)
-            
+        # Check cache only if use_cache is True
+        if use_cache:
+            config_hash = self._hash_config(final_config)
+            cached_result = await self._get_cached_result(request_data.id, config_hash)
+            if cached_result:
+                return self._format_cached_result(cached_result)
+                
         # Get API key for OpenAI
         key_mapper = KeyMapperService(self.db)
         api_key = await key_mapper.get_openai_key(organization_id)

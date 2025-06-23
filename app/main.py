@@ -188,12 +188,12 @@ app.include_router(
 )
 
 app.include_router(
-    analysis_router,
+    analysis_configs_router,
     prefix=settings.api_prefix
 )
 
 app.include_router(
-    analysis_configs_router,
+    analysis_router,
     prefix=settings.api_prefix
 )
 
