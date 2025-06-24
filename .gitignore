@@ -90,3 +90,12 @@ test_analytics.py
 tests/test_analytics.py
 tests/test_personas.py
 tests/test_personas_integration.py
+
+# Analysis test files and JSON data
+fix_json.py
+fixed_prompt.json
+prompt.json
+test_analysis_feature.py
+test_analysis_feature_v2.py
+test_analysis_working.py
+test_openai_direct.py
