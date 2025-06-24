@@ -5,6 +5,18 @@ All notable changes to the Enterprise AI Governance Platform will be documented 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-06-23
+
+### Added
+- Conversation Analysis API for extracting insights from user messages
+  - Intent detection, sentiment analysis, and custom classifications
+  - Reusable analysis configurations with the `/v1/analysis/configs` endpoint
+  - Flexible categorization with confidence scores and reasoning
+  - Caching support for improved performance and cost efficiency
+  - Detailed documentation in the Analysis Guide
+- New SQL migration scripts for analysis database tables
+- Python client example for analysis integration (examples/analysis_client.py)
+
 ## [1.0.0] - 2025-06-12
 
 ### Added

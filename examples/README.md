@@ -2,6 +2,86 @@
 
 This directory contains example code for interacting with the OpenAI Inference Proxy API.
 
+## Analysis Client Example
+
+The `analysis_client.py` file demonstrates how to use the conversation analysis feature:
+
+### Features Demonstrated
+
+1. **Creating Analysis Configurations** - Defining reusable analysis configurations
+2. **Intent Classification** - Analyzing conversations for user intent
+3. **Sentiment Analysis** - Determining the emotional tone of messages
+4. **Urgency Detection** - Assessing the urgency level of requests
+5. **Caching** - Using the caching feature for improved performance
+6. **Multiple Analysis Types** - Performing different types of analysis on the same conversation
+
+### Running the Example
+
+```bash
+# Set environment variables (optional)
+export PROXY_BASE_URL="http://localhost:8000"
+export PROXY_JWT_TOKEN="your-jwt-token-here"
+export SAMPLE_REQUEST_ID="req_abc123"
+export SAMPLE_RESPONSE_ID="resp_xyz789"
+
+# Run the example
+python examples/analysis_client.py
+```
+
+### Example Output
+
+```
+🚀 OpenAI Inference Proxy - Analysis Feature Demo
+📍 Server: http://localhost:8000
+
+1️⃣ Creating Intent Classification Configuration...
+✅ Created config: Customer Support Intent Classifier (ID: 550e8400-e29b-41d4-a716-446655440000)
+
+2️⃣ Analyzing conversation with saved config...
+Intent Analysis Results
+📊 Analysis Type: intent
+🎯 Primary Category: technical_support
+💯 Confidence: 92.00%
+💭 Reasoning: The user is experiencing technical issues with the application
+
+📈 All Categories:
+   technical_support    ████████████████     92.00%
+   └─ User mentions app crashes and error messages
+   billing_inquiry     █                    5.00%
+   feature_request                          2.00%
+   account_management                       1.00%
+   general_inquiry                          0.00%
+
+📋 Metadata: {
+  "sentiment": "frustrated",
+  "urgency": "high",
+  "topics": ["error_handling", "app_stability"]
+}
+
+💰 Cost: $0.000048
+🔄 Cached: No
+🤖 Model: gpt-4o-mini
+
+3️⃣ Running same analysis again (should be cached)...
+✅ Result was cached: True
+
+4️⃣ Analyzing sentiment with inline configuration...
+[Sentiment analysis results shown here]
+
+5️⃣ Analyzing urgency using response ID...
+[Urgency analysis results shown here]
+
+✅ All analyses completed successfully!
+```
+
+### Integration Tips
+
+1. **Create reusable configurations** for common analysis needs
+2. **Analyze selectively** to optimize performance and costs
+3. **Use different analysis types** for comprehensive insights
+4. **Leverage caching** for frequently performed analyses
+5. **Store analysis results** in your application database for historical tracking
+
 ## Python Client Example
 
 The `client.py` file demonstrates a complete Python client implementation with all major features:
