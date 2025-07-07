@@ -1,6 +1,6 @@
 """API endpoints for persona management"""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any, Optional, List
 import uuid
@@ -54,7 +54,8 @@ async def create_persona(
                 name=persona_data.name,
                 content=persona_data.content,
                 description=persona_data.description,
-                user_id=persona_data.user_id
+                user_id=persona_data.user_id,
+                metadata=persona_data.metadata
             )
         except Exception as e:
             if "duplicate key value violates unique constraint" in str(e):
@@ -77,6 +78,7 @@ async def create_persona(
             description=persona.description,
             content=persona.content,
             is_active=persona.is_active,
+            metadata=persona.persona_metadata,
             created_at=persona.created_at,
             updated_at=persona.updated_at
         )
@@ -93,19 +95,36 @@ async def create_persona(
 
 @router.get("", response_model=PersonaList)
 async def list_personas(
+    request: Request,
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
     include_inactive: bool = Query(False, description="Include inactive personas"),
     db: AsyncSession = Depends(get_db),
     organization: Dict[str, Any] = Depends(get_current_organization)
 ):
     """
-    List personas for the organization.
+    List personas for the organization with optional metadata filtering.
     
     This endpoint returns a list of personas (system prompts) for the organization.
+    Supports filtering by metadata fields using query parameters.
     
     Parameters:
     - **user_id**: Optional filter by user ID
     - **include_inactive**: Whether to include inactive personas (default: false)
+    
+    Metadata Filtering:
+    - **metadata.tags**: Filter by tags (comma-separated for OR, use metadata.tags.all for AND)
+    - **metadata.status**: Filter by status field
+    - **metadata.version**: Filter by version field
+    - **metadata.department**: Filter by department field
+    - **metadata.{field}**: Filter by any metadata field
+    - **metadata.{nested.field}**: Filter by nested metadata fields
+    - **metadata_exists**: Check if metadata field exists
+    
+    Examples:
+    - `?metadata.tags=prod,approved` - Personas with 'prod' OR 'approved' tags
+    - `?metadata.tags.all=prod,approved` - Personas with 'prod' AND 'approved' tags
+    - `?metadata.status=production` - Personas with status 'production'
+    - `?metadata.department=engineering&metadata.status=approved` - Multiple filters
     
     Returns:
     - List of personas with their details
@@ -118,10 +137,25 @@ async def list_personas(
         logger.info(f"Listing personas for organization {organization['organization_id']}")
         persona_service = PersonaService(db)
         
+        # Parse metadata filters from query parameters
+        metadata_filters = {}
+        if hasattr(request, 'query_params'):
+            for key, value in request.query_params.items():
+                if key.startswith('metadata.') or key == 'metadata_exists':
+                    # Handle comma-separated values for tags
+                    if key == 'metadata.tags' or key == 'metadata.tags.all':
+                        if ',' in value:
+                            metadata_filters[key] = [tag.strip() for tag in value.split(',')]
+                        else:
+                            metadata_filters[key] = value
+                    else:
+                        metadata_filters[key] = value
+        
         personas = await persona_service.list_personas(
             organization_id=organization["organization_id"],
             external_user_id=user_id,
-            include_inactive=include_inactive
+            include_inactive=include_inactive,
+            metadata_filters=metadata_filters if metadata_filters else None
         )
         
         # Convert internal user IDs to external user IDs
@@ -139,6 +173,7 @@ async def list_personas(
                 description=persona.description,
                 content=persona.content,
                 is_active=persona.is_active,
+                metadata=persona.persona_metadata,
                 created_at=persona.created_at,
                 updated_at=persona.updated_at
             ))
@@ -211,6 +246,7 @@ async def get_persona(
             description=persona.description,
             content=persona.content,
             is_active=persona.is_active,
+            metadata=persona.persona_metadata,
             created_at=persona.created_at,
             updated_at=persona.updated_at
         )
@@ -300,6 +336,7 @@ async def update_persona(
             description=persona.description,
             content=persona.content,
             is_active=persona.is_active,
+            metadata=persona.persona_metadata,
             created_at=persona.created_at,
             updated_at=persona.updated_at
         )
