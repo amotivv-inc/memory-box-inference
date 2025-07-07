@@ -4,6 +4,7 @@ from sqlalchemy import (
     Column, String, Boolean, Integer, DateTime, ForeignKey, 
     Text, DECIMAL, CheckConstraint, UniqueConstraint, JSON
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -152,6 +153,7 @@ class Persona(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     content = Column(Text, nullable=False)  # The actual system prompt content
+    persona_metadata = Column(JSONB, nullable=True)  # Flexible metadata for tagging, versioning, etc.
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

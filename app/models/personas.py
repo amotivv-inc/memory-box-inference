@@ -1,6 +1,6 @@
 """Pydantic models for persona management"""
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
@@ -27,6 +27,16 @@ class PersonaCreate(BaseModel):
         None, 
         description="Optional user ID to restrict the persona to a specific user",
         examples=["user-123"]
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Flexible metadata for tagging, versioning, and organizational schemes",
+        examples=[{
+            "tags": ["prod", "approved"],
+            "version": "2.0.0",
+            "status": "production",
+            "department": "customer_success"
+        }]
     )
 
 
@@ -56,6 +66,15 @@ class PersonaUpdate(BaseModel):
         None, 
         description="Whether the persona is active",
         examples=[True]
+    )
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Flexible metadata for tagging, versioning, and organizational schemes",
+        examples=[{
+            "tags": ["prod", "approved", "tested"],
+            "version": "2.1.0",
+            "last_tested": "2025-01-15T14:30:00Z"
+        }]
     )
 
 
@@ -89,6 +108,15 @@ class PersonaResponse(BaseModel):
         ...,
         examples=[True]
     )
+    metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Flexible metadata for tagging, versioning, and organizational schemes",
+        examples=[{
+            "tags": ["prod", "approved"],
+            "version": "2.0.0",
+            "status": "production"
+        }]
+    )
     created_at: datetime = Field(
         ...,
         examples=["2025-05-29T16:00:00.000Z"]
@@ -108,6 +136,12 @@ class PersonaResponse(BaseModel):
                 "description": "A helpful customer support agent that assists users with their inquiries",
                 "content": "You are a helpful customer support agent for Acme Inc. You should be polite, professional, and helpful.",
                 "is_active": True,
+                "metadata": {
+                    "tags": ["prod", "approved"],
+                    "version": "2.0.0",
+                    "status": "production",
+                    "department": "customer_success"
+                },
                 "created_at": "2025-05-29T16:00:00.000Z",
                 "updated_at": "2025-05-29T16:00:00.000Z"
             }
@@ -131,6 +165,12 @@ class PersonaList(BaseModel):
                         "description": "A helpful customer support agent that assists users with their inquiries",
                         "content": "You are a helpful customer support agent for Acme Inc. You should be polite, professional, and helpful.",
                         "is_active": True,
+                        "metadata": {
+                            "tags": ["prod", "approved"],
+                            "version": "2.0.0",
+                            "status": "production",
+                            "department": "customer_success"
+                        },
                         "created_at": "2025-05-29T16:00:00.000Z",
                         "updated_at": "2025-05-29T16:00:00.000Z"
                     },
@@ -142,6 +182,11 @@ class PersonaList(BaseModel):
                         "description": "A technical support agent that helps users with technical issues",
                         "content": "You are a technical support agent for Acme Inc. You should provide detailed technical assistance.",
                         "is_active": True,
+                        "metadata": {
+                            "tags": ["dev", "testing"],
+                            "version": "1.5.0",
+                            "status": "development"
+                        },
                         "created_at": "2025-05-29T16:30:00.000Z",
                         "updated_at": "2025-05-29T16:30:00.000Z"
                     }

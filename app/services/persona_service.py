@@ -1,8 +1,9 @@
 """Service for managing personas"""
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, and_, or_
 from sqlalchemy.orm import joinedload
+from sqlalchemy.dialects.postgresql import JSONB
 from typing import Dict, Any, List, Optional
 import uuid
 import logging
@@ -24,7 +25,8 @@ class PersonaService:
         name: str,
         content: str,
         description: Optional[str] = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None
     ) -> Persona:
         """
         Create a new persona
@@ -35,6 +37,7 @@ class PersonaService:
             content: System prompt content
             description: Optional description
             user_id: Optional user ID to restrict the persona to
+            metadata: Optional metadata for tagging, versioning, etc.
             
         Returns:
             Created persona
@@ -61,6 +64,7 @@ class PersonaService:
             name=name,
             description=description,
             content=content,
+            persona_metadata=metadata,
             is_active=True
         )
         
@@ -187,7 +191,10 @@ class PersonaService:
         
         # Update other fields
         for key, value in data.items():
-            if hasattr(persona, key) and value is not None:
+            if key == "metadata":
+                # Handle metadata specially to map to persona_metadata
+                persona.persona_metadata = value
+            elif hasattr(persona, key) and value is not None:
                 setattr(persona, key, value)
         
         await self.db.commit()
@@ -224,15 +231,17 @@ class PersonaService:
         self,
         organization_id: str,
         external_user_id: Optional[str] = None,
-        include_inactive: bool = False
+        include_inactive: bool = False,
+        metadata_filters: Optional[Dict[str, Any]] = None
     ) -> List[Persona]:
         """
-        List personas for an organization
+        List personas for an organization with optional metadata filtering
         
         Args:
             organization_id: Organization ID
             external_user_id: Optional external user ID to filter by
             include_inactive: Whether to include inactive personas
+            metadata_filters: Optional metadata filters for searching
             
         Returns:
             List of personas
@@ -267,11 +276,87 @@ class PersonaService:
                 # User not found, only include personas with no user restriction
                 query = query.where(Persona.user_id.is_(None))
         
+        # Apply metadata filters if provided
+        if metadata_filters:
+            query = self._apply_metadata_filters(query, metadata_filters)
+        
         # Order by name
         query = query.order_by(Persona.name)
         
         result = await self.db.execute(query)
         return result.scalars().all()
+    
+    def _apply_metadata_filters(self, query, metadata_filters: Dict[str, Any]):
+        """
+        Apply metadata filters to a query using PostgreSQL JSONB operators
+        
+        Args:
+            query: SQLAlchemy query object
+            metadata_filters: Dictionary of metadata filters
+            
+        Returns:
+            Modified query with metadata filters applied
+        """
+        for key, value in metadata_filters.items():
+            if key.startswith('metadata.'):
+                # Remove 'metadata.' prefix to get the actual field path
+                field_path = key[9:]  # Remove 'metadata.' prefix
+                
+                if field_path == 'tags':
+                    # Special handling for tags - support both single tag and multiple tags
+                    if isinstance(value, str):
+                        # Single tag - check if array contains this tag
+                        query = query.where(
+                            Persona.persona_metadata['tags'].astext.contains(f'"{value}"')
+                        )
+                    elif isinstance(value, list):
+                        # Multiple tags - check if array contains any of these tags
+                        tag_conditions = []
+                        for tag in value:
+                            tag_conditions.append(
+                                Persona.persona_metadata['tags'].astext.contains(f'"{tag}"')
+                            )
+                        query = query.where(or_(*tag_conditions))
+                
+                elif field_path == 'tags.all':
+                    # Special handling for tags.all - array must contain ALL specified tags
+                    if isinstance(value, list):
+                        for tag in value:
+                            query = query.where(
+                                Persona.persona_metadata['tags'].astext.contains(f'"{tag}"')
+                            )
+                
+                elif '.' in field_path:
+                    # Nested field access (e.g., deployment.environment)
+                    path_parts = field_path.split('.')
+                    # Use JSONB path operator for nested access
+                    json_path = '{' + ','.join(path_parts) + '}'
+                    query = query.where(
+                        Persona.persona_metadata.op('#>')(json_path).astext == str(value)
+                    )
+                
+                else:
+                    # Simple field match (e.g., status, version, department)
+                    query = query.where(
+                        Persona.persona_metadata[field_path].astext == str(value)
+                    )
+            
+            elif key == 'metadata_exists':
+                # Check if metadata field exists
+                if isinstance(value, str):
+                    query = query.where(
+                        Persona.persona_metadata.op('?')(value)
+                    )
+                elif isinstance(value, list):
+                    # Check if any of the fields exist
+                    exists_conditions = []
+                    for field in value:
+                        exists_conditions.append(
+                            Persona.persona_metadata.op('?')(field)
+                        )
+                    query = query.where(or_(*exists_conditions))
+        
+        return query
     
     async def get_external_user_id(self, internal_user_id: uuid.UUID) -> Optional[str]:
         """
