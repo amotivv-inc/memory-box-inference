@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to the Enterprise AI Governance Platform will be documented in this file.
+All notable changes to the Enterprise AI Gateway will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+- Updated product name from "Enterprise AI Governance Platform" to "Enterprise AI Gateway"
+- Updated license from GNU AGPL-3.0 to Business Source License 1.1
 
 ## [1.1.0] - 2025-06-23
 

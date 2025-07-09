@@ -1,11 +1,11 @@
-# Contributing to OpenAI Inference Proxy
+# Contributing to Enterprise AI Gateway
 
 Thank you for your interest in contributing! We welcome contributions from the community.
 
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/openai-inference-proxy.git`
+2. Clone your fork: `git clone https://github.com/yourusername/enterprise-ai-gateway.git`
 3. Create a feature branch: `git checkout -b feature/your-feature-name`
 4. Make your changes
 5. Push to your fork: `git push origin feature/your-feature-name`
@@ -15,8 +15,8 @@ Thank you for your interest in contributing! We welcome contributions from the c
 
 ```bash
 # Clone and enter the directory
-git clone https://github.com/yourusername/openai-inference-proxy.git
-cd openai-inference-proxy
+git clone https://github.com/yourusername/enterprise-ai-gateway.git
+cd enterprise-ai-gateway
 
 # Run the quickstart script
 ./scripts/quickstart.sh

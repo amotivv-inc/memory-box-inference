@@ -992,4 +992,18 @@ docker logs openai-proxy-api
 # Connect to database
 docker exec -it openai-inference-proxy-db psql -U postgres -d openai_proxy
 
-# List active API keys for an
+# List active API keys for an organization
+docker exec openai-proxy-api python scripts/manage_api_keys.py list-keys --org-id <org-id>
+```
+
+## 📄 License
+
+This software is licensed under the Business Source License 1.1.
+
+**Key points:**
+- Production use is permitted for any individual or entity whose Total Finances do not exceed US $2,000,000 for the most recent 12-month period
+- "Total Finances" means the largest of your aggregate gross revenues, entire budget, and/or funding
+- Non-production use (development, debugging, testing) is permitted for all users
+- The license will change to GNU Affero General Public License v3.0 on the earlier of 2028-06-28, or when version 4.0.0 or later is published
+
+For full license details, see the [LICENSE](LICENSE) file.
