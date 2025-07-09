@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the implementation of user-scoped API key validation in the OpenAI Inference Proxy, which provides fine-grained access control for audit purposes.
+This document describes the implementation of user-scoped API key validation in the Enterprise AI Gateway, which provides fine-grained access control for audit purposes.
 
 ## Implementation Details
 
@@ -42,11 +42,11 @@ async def get_api_key_for_request(
 2. X-User-ID header identifies the user
 3. System finds or creates the user record
 4. Appropriate API key is selected based on user/org
-5. Request is forwarded to OpenAI with the decrypted key
+5. Request is forwarded to AI provider with the decrypted key
 
 ### 4. Audit Benefits
 
-- **User-Level Access Control**: Different users can have different OpenAI keys
+- **User-Level Access Control**: Different users can have different AI provider keys
 - **Usage Tracking**: All requests are tied to specific users and API keys
 - **Granular Permissions**: Revoke access for specific users without affecting others
 - **Compliance**: Complete audit trail of who used which API key when
@@ -85,7 +85,7 @@ This includes all user-scoped API key tests as part of the complete test suite.
 docker exec openai-proxy-api python scripts/manage_users.py create-user $ORG_ID "alice"
 
 # Create API key for user
-docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_ID $OPENAI_KEY \
+docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_ID $AI_PROVIDER_KEY \
   --user-id $USER_ID \
   --name "Alice's Personal Key"
 ```
@@ -94,7 +94,7 @@ docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_I
 
 ```bash
 # Create API key without user association
-docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_ID $OPENAI_KEY \
+docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_ID $AI_PROVIDER_KEY \
   --name "Shared Organization Key"
 ```
 
@@ -116,6 +116,6 @@ The implementation doesn't require any new API endpoints. The existing `/v1/resp
 ## Future Enhancements
 
 1. **Rate Limiting**: Apply different rate limits to different users
-2. **Model Restrictions**: Limit certain users to specific OpenAI models
+2. **Model Restrictions**: Limit certain users to specific AI models
 3. **Usage Quotas**: Set per-user usage limits
 4. **Key Rotation**: Automated key rotation policies per user

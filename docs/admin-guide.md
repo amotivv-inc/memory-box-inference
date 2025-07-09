@@ -1,6 +1,6 @@
-# OpenAI Inference Proxy: Administration Guide
+# Enterprise AI Gateway: Administration Guide
 
-This comprehensive guide covers all aspects of managing organizations and API keys in the OpenAI Inference Proxy, including Docker commands for connecting to the API container and detailed instructions for all administrative tasks.
+This comprehensive guide covers all aspects of managing organizations and API keys in the Enterprise AI Gateway, including Docker commands for connecting to the API container and detailed instructions for all administrative tasks.
 
 ## Table of Contents
 
@@ -16,12 +16,12 @@ This comprehensive guide covers all aspects of managing organizations and API ke
 
 ## Initial Deployment
 
-To deploy the OpenAI Inference Proxy on a remote Docker server:
+To deploy the Enterprise AI Gateway on a remote Docker server:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/openai-inference-proxy.git
-cd openai-inference-proxy
+git clone https://github.com/your-repo/enterprise-ai-gateway.git
+cd enterprise-ai-gateway
 
 # Deploy with Docker Compose
 docker-compose -f docker/docker-compose.yml up -d
@@ -76,7 +76,7 @@ python scripts/manage_api_keys.py list-orgs
 
 ## Managing API Keys
 
-API keys map organizations to OpenAI API keys. Each organization can have multiple API keys.
+API keys map organizations to AI provider API keys. Each organization can have multiple API keys.
 
 ### Creating an API Key
 
@@ -87,7 +87,7 @@ Accessible by any user in the organization:
 
 ```bash
 # Create a new API key for an organization
-python scripts/manage_api_keys.py create-key <org-id> <your-openai-key>
+python scripts/manage_api_keys.py create-key <org-id> <your-ai-provider-key>
 
 # Example with optional parameters:
 python scripts/manage_api_keys.py create-key bc88026d-14ec-447c-abf5-c4bb582c5703 sk-abcdef123456 --name "Production Key" --description "For production use only"
@@ -106,13 +106,13 @@ Restricted to a specific user for audit compliance:
 
 ```bash
 # Create a user-specific API key
-python scripts/manage_api_keys.py create-key <org-id> <your-openai-key> --user-id <user-internal-id> --name "User's Personal Key"
+python scripts/manage_api_keys.py create-key <org-id> <your-ai-provider-key> --user-id <user-internal-id> --name "User's Personal Key"
 
 # Example:
 python scripts/manage_api_keys.py create-key bc88026d-14ec-447c-abf5-c4bb582c5703 sk-userkey123456 --user-id 5e6208ba-c511-46fd-b51b-6993a73b2943 --name "Alice's Key"
 ```
 
-The synthetic key is what your clients will use to authenticate with the proxy. The actual OpenAI API key is encrypted and stored securely.
+The synthetic key is what your clients will use to authenticate with the gateway. The actual AI provider API key is encrypted and stored securely.
 
 **Key Resolution Priority**:
 1. User-specific key (if exists and active)

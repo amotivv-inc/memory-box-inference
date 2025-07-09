@@ -1,6 +1,6 @@
-# OpenAI Inference Proxy Client Examples
+# Enterprise AI Gateway Client Examples
 
-This directory contains example code for interacting with the OpenAI Inference Proxy API.
+This directory contains example code for interacting with the Enterprise AI Gateway API.
 
 ## Analysis Client Example
 
@@ -31,7 +31,7 @@ python examples/analysis_client.py
 ### Example Output
 
 ```
-🚀 OpenAI Inference Proxy - Analysis Feature Demo
+🚀 Enterprise AI Gateway - Analysis Feature Demo
 📍 Server: http://localhost:8000
 
 1️⃣ Creating Intent Classification Configuration...
@@ -94,7 +94,7 @@ The `client.py` file demonstrates a complete Python client implementation with a
 4. **Response Rating** - Rating responses by both request ID and response ID
 5. **Error Handling** - Handling 403 (no API key) and other errors
 6. **Session Management** - Automatic session ID tracking
-7. **User-Scoped API Keys** - Understanding how the proxy selects API keys
+7. **User-Scoped API Keys** - Understanding how the gateway selects API keys
 8. **Persona Usage** - Using personas (system prompts) in requests
 
 ### Prerequisites
@@ -119,11 +119,11 @@ pip install httpx
 2. **Add an API Key** (organization-wide or user-specific):
    ```bash
    # Organization-wide key
-   docker exec openai-proxy-api python scripts/manage_api_keys.py create-key <org-id> <openai-key>
+   docker exec openai-proxy-api python scripts/manage_api_keys.py create-key <org-id> <ai-provider-key>
    
    # User-specific key
    docker exec openai-proxy-api python scripts/manage_users.py create-user <org-id> "user@example.com"
-   docker exec openai-proxy-api python scripts/manage_api_keys.py create-key <org-id> <openai-key> --user-id <user-internal-id>
+   docker exec openai-proxy-api python scripts/manage_api_keys.py create-key <org-id> <ai-provider-key> --user-id <user-internal-id>
    ```
 
 3. **Update the Client Configuration**:
@@ -142,7 +142,7 @@ python examples/client.py
 ### Example Output
 
 ```
-=== OpenAI Proxy Client Example ===
+=== Enterprise AI Gateway Client Example ===
 
 1. Non-streaming request:
 Response: The capital of France is Paris.
@@ -170,7 +170,7 @@ Session ID: session_123abc
 
 ### Understanding User-Scoped API Keys
 
-The proxy implements a priority-based API key selection:
+The gateway implements a priority-based API key selection:
 
 1. **User-Specific Keys**: If the user (identified by X-User-ID header) has a personal API key, it will be used
 2. **Organization-Wide Keys**: If no user-specific key exists, the organization's shared key is used
@@ -178,7 +178,7 @@ The proxy implements a priority-based API key selection:
 
 This allows for:
 - **Audit Compliance**: Track exactly which user made which requests
-- **Fine-grained Control**: Different users can have different OpenAI API keys
+- **Fine-grained Control**: Different users can have different AI provider API keys
 - **Flexible Access**: Users without personal keys can still use shared organization keys
 
 ### Error Handling
@@ -188,7 +188,7 @@ The client handles common error scenarios:
 - **403 Forbidden**: No API key available for the user/organization
 - **401 Unauthorized**: Invalid or expired JWT token
 - **422 Unprocessable Entity**: Missing required headers (e.g., X-User-ID)
-- **400 Bad Request**: Invalid request data or OpenAI API errors
+- **400 Bad Request**: Invalid request data or AI provider API errors
 
 ### Advanced Usage
 
