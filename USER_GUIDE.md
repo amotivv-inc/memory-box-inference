@@ -1,4 +1,4 @@
-# Enterprise AI Governance Platform: User Guide
+# Enterprise AI Gateway: User Guide
 
 ## Table of Contents
 
@@ -26,15 +26,15 @@
 
 ## Introduction
 
-The Enterprise AI Governance Platform is a comprehensive solution for governing, securing, and monitoring AI interactions between your applications and OpenAI's Responses API. It provides enterprise-grade features including authentication, user management, usage tracking, analytics, and compliance controls while maintaining full compatibility with OpenAI's API format.
+The Enterprise AI Gateway is a comprehensive solution for governing, securing, and monitoring AI interactions between your applications and AI provider APIs. It provides enterprise-grade features including authentication, user management, usage tracking, analytics, and compliance controls while maintaining full compatibility with standard AI API formats.
 
-This guide explains the key concepts, features, and patterns of the proxy to help you get the most out of its capabilities.
+This guide explains the key concepts, features, and patterns of the gateway to help you get the most out of its capabilities.
 
 ## Core Concepts
 
 ### Organizations
 
-**What they are:** Organizations are the top-level entities in the system. Each organization represents a company, team, or group that uses the proxy.
+**What they are:** Organizations are the top-level entities in the system. Each organization represents a company, team, or group that uses the gateway.
 
 **How they work:**
 - Organizations own all other resources (users, API keys, personas)
@@ -69,13 +69,13 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 
 ### API Keys
 
-**What they are:** API keys map organizations and users to OpenAI API keys.
+**What they are:** API keys map organizations and users to AI provider API keys.
 
 **How they work:**
 - API keys can be scoped to either:
   - **Organization-wide:** Shared by all users in the organization
   - **User-specific:** Restricted to a particular user
-- Real OpenAI API keys are encrypted in the database
+- Real AI provider API keys are encrypted in the database
 - Synthetic keys are generated for reference
 - The system automatically selects the appropriate key based on the user making the request
 
@@ -158,11 +158,11 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 
 ### Requests and Responses
 
-**What they are:** Requests are individual API calls to the proxy, and responses are the corresponding replies from OpenAI.
+**What they are:** Requests are individual API calls to the gateway, and responses are the corresponding replies from the AI provider.
 
 **How they work:**
 - Each request has a unique request ID
-- Each OpenAI response has a response ID
+- Each AI response has a response ID
 - Requests are associated with users and sessions
 - Requests can use personas for system prompts
 - Requests can be streaming or non-streaming
@@ -171,18 +171,18 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 
 **Request flow:**
 1. Client sends request with JWT token and user ID
-2. Proxy authenticates and authorizes the request
-3. Proxy selects the appropriate API key
-4. Proxy forwards the request to OpenAI
-5. Proxy receives and processes the response
-6. Proxy logs usage data
-7. Proxy returns the response to the client
+2. Gateway authenticates and authorizes the request
+3. Gateway selects the appropriate API key
+4. Gateway forwards the request to AI provider
+5. Gateway receives and processes the response
+6. Gateway logs usage data
+7. Gateway returns the response to the client
 
 **How to use them:**
 - Make POST requests to `/v1/responses`
 - Include required headers (Authorization, X-User-ID)
 - Optionally include X-Session-ID for session tracking
-- Format request body according to OpenAI's Responses API
+- Format request body according to AI provider's API
 - Handle streaming or non-streaming responses as needed
 
 ### Conversation Context
@@ -190,14 +190,14 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 **What they are:** Conversation context allows the AI to remember previous interactions within a conversation.
 
 **How they work:**
-- OpenAI's Responses API uses the `previous_response_id` field to maintain context
-- The proxy passes this field to OpenAI and stores response IDs
+- AI APIs use the `previous_response_id` field to maintain context
+- The gateway passes this field to the AI provider and stores response IDs
 - This allows for multi-turn conversations without sending the entire history
-- The proxy doesn't automatically manage conversation history - your client application must handle this
+- The gateway doesn't automatically manage conversation history - your client application must handle this
 
 **How to use them:**
 1. Send your initial request without a `previous_response_id`
-2. Extract the response ID from OpenAI's response (`response.id`)
+2. Extract the response ID from the AI's response (`response.id`)
 3. For follow-up messages, include this ID as `previous_response_id`
 4. Example:
    ```json
@@ -218,16 +218,16 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
    ```
 
 **Important notes:**
-- The proxy's session tracking (X-Session-ID header) is separate from conversation context
+- The gateway's session tracking (X-Session-ID header) is separate from conversation context
 - Sessions are used for analytics and grouping, while `previous_response_id` is for AI memory
-- Response IDs are stored in the proxy's database and can be retrieved with the request ID if needed
+- Response IDs are stored in the gateway's database and can be retrieved with the request ID if needed
 
 ### Analysis
 
 **What it is:** Analysis is a powerful feature that extracts insights from conversations, such as user intent, sentiment, and custom classifications.
 
 **How it works:**
-- Analysis uses OpenAI models to classify conversations into predefined categories
+- Analysis uses AI models to classify conversations into predefined categories
 - Analysis can be performed on any request or response
 - Analysis configurations define the categories and classification parameters
 - Analysis results include confidence scores and reasoning
@@ -343,7 +343,7 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 **What they are:** Analytics provide insights into API usage, performance, and costs.
 
 **How they work:**
-- The proxy tracks detailed metrics for all requests
+- The gateway tracks detailed metrics for all requests
 - Analytics are scoped to organizations
 - Analytics can be filtered by user, date range, model, etc.
 - Analytics include token usage, costs, success rates, and more
@@ -370,12 +370,12 @@ This guide explains the key concepts, features, and patterns of the proxy to hel
 
 ### JWT Authentication
 
-The proxy uses JWT (JSON Web Token) for authentication. Each token is associated with an organization.
+The gateway uses JWT (JSON Web Token) for authentication. Each token is associated with an organization.
 
 **How it works:**
 1. Administrators generate JWT tokens for organizations
 2. Clients include the token in the Authorization header
-3. The proxy validates the token and identifies the organization
+3. The gateway validates the token and identifies the organization
 4. If the token is valid, the request is processed
 
 **How to use it:**
@@ -388,11 +388,11 @@ The proxy uses JWT (JSON Web Token) for authentication. Each token is associated
 
 ### User Identification
 
-In addition to JWT authentication, the proxy requires user identification for all requests.
+In addition to JWT authentication, the gateway requires user identification for all requests.
 
 **How it works:**
 1. Clients include a user identifier in the X-User-ID header
-2. The proxy finds or creates the user in the database
+2. The gateway finds or creates the user in the database
 3. The user is associated with the request for tracking and analytics
 4. If the user has a personal API key, it will be used
 
@@ -894,7 +894,7 @@ The analysis feature supports several advanced options:
 - **Custom Prompts**: Provide a custom prompt template for specialized analysis
 - **Multi-label Classification**: Allow multiple primary categories
 - **Confidence Threshold**: Set a minimum confidence threshold
-- **Model Selection**: Choose between different OpenAI models
+- **Model Selection**: Choose between different AI models
 - **Temperature**: Adjust the randomness of the analysis
 
 Example with advanced options:
@@ -1017,340 +1017,3 @@ async function analyzeConversation(requestId) {
     return null;
   }
 }
-```
-
-## Rating Responses
-
-### Rating by Request ID
-
-```http
-POST /v1/responses/req_abc123def456/rate
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-Content-Type: application/json
-
-{
-  "rating": 1,
-  "feedback": "This response was very helpful and accurate."
-}
-```
-
-### Rating by Response ID
-
-```http
-POST /v1/responses/resp_abc123def456/rate
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-Content-Type: application/json
-
-{
-  "rating": -1,
-  "feedback": "This response didn't answer my question."
-}
-```
-
-### Viewing Rated Responses
-
-```http
-GET /v1/analytics/rated-responses
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-```
-
-## Analytics and Monitoring
-
-### Model Usage Analytics
-
-```http
-GET /v1/analytics/models
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-```
-
-Response:
-
-```json
-{
-  "models": [
-    {
-      "model": "gpt-4o",
-      "request_count": 150,
-      "success_count": 145,
-      "failure_count": 5,
-      "success_rate": 96.7,
-      "input_tokens": 15000,
-      "output_tokens": 45000,
-      "total_tokens": 60000,
-      "total_cost": 1.25,
-      "avg_response_time": 1.5
-    }
-  ],
-  "total_requests": 200,
-  "total_cost": 2.50,
-  "period_start": "2025-06-01T00:00:00Z",
-  "period_end": "2025-06-07T23:59:59Z"
-}
-```
-
-### User Usage Analytics
-
-```http
-GET /v1/analytics/user-usage
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-```
-
-Response:
-
-```json
-{
-  "users": [
-    {
-      "user_id": "user123",
-      "request_count": 150,
-      "success_count": 145,
-      "failure_count": 5,
-      "success_rate": 96.7,
-      "input_tokens": 15000,
-      "output_tokens": 45000,
-      "total_tokens": 60000,
-      "total_cost": 1.25,
-      "avg_response_time": 1.5,
-      "last_request_at": "2025-06-01T12:34:56Z",
-      "models_used": ["gpt-4o", "gpt-4o-mini"]
-    }
-  ],
-  "total_users": 10,
-  "total_requests": 200,
-  "total_cost": 2.50,
-  "period_start": "2025-06-01T00:00:00Z",
-  "period_end": "2025-06-07T23:59:59Z",
-  "filtered_by_user": "user123"
-}
-```
-
-### Session Analytics
-
-```http
-GET /v1/analytics/sessions
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-```
-
-Response:
-
-```json
-{
-  "sessions": [
-    {
-      "session_id": "sess_1234567890abcdef",
-      "user_id": "user123",
-      "started_at": "2025-06-01T12:00:00Z",
-      "ended_at": "2025-06-01T12:30:00Z",
-      "duration_minutes": 30.5,
-      "request_count": 15,
-      "total_tokens": 5000,
-      "total_cost": 0.25,
-      "models_used": ["gpt-4o", "gpt-4o-mini"],
-      "is_active": false
-    }
-  ],
-  "total_sessions": 100,
-  "active_sessions": 25,
-  "total_requests": 1500,
-  "total_cost": 25.50,
-  "avg_session_duration": 15.3,
-  "period_start": "2025-06-01T00:00:00Z",
-  "period_end": "2025-06-07T23:59:59Z",
-  "filtered_by_user": "user123"
-}
-```
-
-### Persona Analytics
-
-```http
-GET /v1/analytics/personas
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-```
-
-Response:
-
-```json
-{
-  "personas": [
-    {
-      "persona_id": "123e4567-e89b-12d3-a456-426614174000",
-      "name": "Customer Support Agent",
-      "description": "For handling customer inquiries",
-      "user_id": null,
-      "request_count": 150,
-      "success_count": 145,
-      "failure_count": 5,
-      "success_rate": 96.7,
-      "input_tokens": 15000,
-      "output_tokens": 45000,
-      "total_tokens": 60000,
-      "total_cost": 1.25,
-      "avg_response_time": 1.5,
-      "last_used_at": "2025-06-01T12:34:56Z",
-      "models_used": ["gpt-4o", "gpt-4o-mini"],
-      "is_active": true
-    }
-  ],
-  "total_personas": 10,
-  "total_requests": 200,
-  "total_cost": 2.50,
-  "period_start": "2025-06-01T00:00:00Z",
-  "period_end": "2025-06-07T23:59:59Z",
-  "filtered_by_user": "user123",
-  "include_inactive": false
-}
-```
-
-### Detailed Persona Analytics
-
-```http
-GET /v1/analytics/personas/123e4567-e89b-12d3-a456-426614174000
-Authorization: Bearer YOUR_JWT_TOKEN
-X-User-ID: user@example.com
-```
-
-Response:
-
-```json
-{
-  "persona": {
-    "persona_id": "123e4567-e89b-12d3-a456-426614174000",
-    "name": "Customer Support Agent",
-    "description": "For handling customer inquiries",
-    "user_id": null,
-    "request_count": 150,
-    "success_count": 145,
-    "failure_count": 5,
-    "success_rate": 96.7,
-    "input_tokens": 15000,
-    "output_tokens": 45000,
-    "total_tokens": 60000,
-    "total_cost": 1.25,
-    "avg_response_time": 1.5,
-    "last_used_at": "2025-06-01T12:34:56Z",
-    "models_used": ["gpt-4o", "gpt-4o-mini"],
-    "is_active": true
-  },
-  "daily_usage": [
-    {
-      "date": "2025-06-01",
-      "request_count": 25,
-      "success_count": 24,
-      "failure_count": 1,
-      "total_tokens": 10000,
-      "total_cost": 0.25
-    }
-  ],
-  "request_count_by_model": {
-    "gpt-4o": 100,
-    "gpt-4o-mini": 50
-  },
-  "request_count_by_status": {
-    "completed": 145,
-    "failed": 5
-  },
-  "token_usage_by_model": {
-    "gpt-4o": {
-      "input_tokens": 10000,
-      "output_tokens": 30000,
-      "total_tokens": 40000,
-      "total_cost": 1.00
-    },
-    "gpt-4o-mini": {
-      "input_tokens": 5000,
-      "output_tokens": 15000,
-      "total_tokens": 20000,
-      "total_cost": 0.25
-    }
-  },
-  "top_users": [
-    {
-      "user_id": "user123",
-      "request_count": 75,
-      "total_tokens": 30000,
-      "total_cost": 0.75
-    }
-  ],
-  "period_start": "2025-06-01T00:00:00Z",
-  "period_end": "2025-06-07T23:59:59Z"
-}
-```
-
-## Best Practices
-
-### Authentication and Security
-
-1. **Store JWT tokens securely** - Don't commit them to version control
-2. **Handle token expiration** - Implement token refresh logic
-3. **Use HTTPS in production** - Always encrypt traffic in transit
-4. **Validate user input** - Sanitize all user input before sending to the API
-
-### Performance and Reliability
-
-1. **Implement retry logic** - For transient network errors
-2. **Handle streaming properly** - Use appropriate streaming libraries
-3. **Monitor usage** - Track token consumption and costs
-4. **Implement timeouts** - Set appropriate timeouts for requests
-
-### User Experience
-
-1. **Use sessions effectively** - Group related requests for better tracking
-2. **Collect ratings** - Encourage users to rate responses for quality improvement
-3. **Leverage personas** - Create specialized personas for different use cases
-4. **Monitor persona performance** - Use analytics to optimize your personas
-
-### Conversation Management
-
-1. **Store response IDs** - Save response IDs for conversation continuity
-2. **Use previous_response_id** - Include previous response IDs for follow-up messages
-3. **Manage session context** - Use the same session ID for related requests
-4. **Handle errors gracefully** - Provide meaningful error messages to users
-
-## Troubleshooting
-
-### Common Issues
-
-#### "No active API key found for organization"
-- Verify organization has at least one active API key
-- Check if user-specific key exists (if applicable)
-- Ensure API key is marked as active
-
-#### "Invalid authentication credentials"
-- Verify JWT token is valid and not expired
-- Check JWT_SECRET_KEY matches between token generation and validation
-- Ensure Authorization header format is correct: `Bearer <token>`
-
-#### "User not found"
-- Users are auto-created on first request
-- For manual creation, ensure organization ID is correct
-- Check X-User-ID header is present in requests
-
-#### "Persona not found or not accessible"
-- Verify persona ID is correct
-- Check if persona is active
-- Ensure user has access to the persona (if user-restricted)
-
-#### "Error processing request"
-- Check request format matches OpenAI's Responses API
-- Verify model name is valid
-- Ensure input is properly formatted
-
-### Getting Help
-
-- 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/amotivv-inc/enterprise-ai-governance/issues)
-- 💬 [Discussions](https://github.com/amotivv-inc/enterprise-ai-governance/discussions)
-- 📧 Email: ai@amotivv.com
-
-## License
-
-This software is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). This license requires that all modified versions must be released under the same license. Additionally, if you run a modified version of this software on a server and allow users to interact with it, you must make the source code available to those users.
-
-For more information about the AGPL-3.0 license, visit: https://www.gnu.org/licenses/agpl-3.0.html

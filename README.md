@@ -1,70 +1,101 @@
-# Enterprise AI Governance Platform
+# Enterprise AI Gateway
 
-A comprehensive enterprise solution for governing, securing, and monitoring AI interactions with OpenAI's Responses API, featuring advanced authentication, user management, usage tracking, and audit capabilities.
+Transform your organization's AI usage from a black box into a transparent, governed, and optimized operation. This gateway provides the missing intelligence layer between your users and AI providers.
+
+## 🎯 The Problem We Solve
+
+While most AI gateways focus on model switching and load balancing, enterprises need deeper intelligence:
+
+- **Who** is using AI across the organization
+- **What** they're using it for (intent analysis, conversation patterns)
+- **How much** it's costing per user, team, and use case
+- **Whether** the AI is delivering value (response ratings, quality metrics)
+
+This gateway bridges the gap between AI infrastructure and AI intelligence.
 
 ## 🌟 Overview
 
-This proxy acts as an intelligent intermediary between your applications and OpenAI's API, providing:
+This gateway acts as an intelligent intermediary between your applications and AI APIs, providing:
 
-- **Security**: JWT-based authentication with organization isolation
-- **Access Control**: User-scoped and organization-wide API key management
-- **Audit Trail**: Complete request tracking with user attribution
-- **Cost Management**: Real-time usage tracking and cost calculation
-- **Flexibility**: Support for both streaming and non-streaming responses
-- **User Experience**: Response rating system for quality feedback
+- **Security**: Centralized API key management - users never see actual keys
+- **Attribution**: Track every request by user, team, and purpose
+- **Analytics**: Built-in conversation analysis for intent, sentiment, and patterns
+- **Governance**: Control AI behaviors with personas and access policies
+- **Cost Control**: Real-time usage tracking and allocation by cost center
+- **Quality Assurance**: Response rating system with feedback loops
 
-### Key Benefits
+### What Makes This Different
 
-- 🔒 **Enhanced Security**: Never expose OpenAI API keys to client applications
-- 📊 **Usage Analytics**: Track costs and usage patterns by user and organization
-- 🎯 **Fine-grained Control**: Assign different API keys to different users
-- 📝 **Compliance Ready**: Full audit trail for all API interactions
-- 🚀 **Production Ready**: Docker deployment with health monitoring
+#### 1. User-Level Intelligence
+Unlike traditional gateways that only track aggregate usage:
+- Individual user attribution for every request
+- User-scoped API keys for compliance requirements
+- Automatic user provisioning with external ID mapping
+- Department and team-level usage analytics
+
+#### 2. Conversation Analytics Engine
+Built-in AI-powered analysis to understand:
+- Intent classification for intelligent routing
+- Sentiment analysis for quality monitoring
+- Custom classification for business-specific needs
+- Pattern recognition across conversations
+
+#### 3. Enterprise-First Architecture
+- **Persona Management**: Control AI behaviors at org and user levels
+- **Cost Attribution**: Allocate AI spend to specific cost centers
+- **Complete Audit Trail**: Every interaction tracked with full context
+- **Quality Assurance**: Response rating system with feedback loops
+
+#### 4. Production-Ready Integration
+- JWT-based auth integrates with enterprise identity providers
+- Session management for conversation continuity
+- Standard database backend (PostgreSQL)
+- Container-based deployment for modern infrastructure
 
 ## 🏗️ Architecture
 
 ```mermaid
 flowchart TD
     classDef clients fill:#f9f9f9,stroke:#333,stroke-width:2px
-    classDef proxy fill:#e6f7ff,stroke:#0066cc,stroke-width:2px
-    classDef proxyComponents fill:#cceeff,stroke:#0066cc,stroke-width:1px
+    classDef gateway fill:#e6f7ff,stroke:#0066cc,stroke-width:2px
+    classDef gatewayComponents fill:#cceeff,stroke:#0066cc,stroke-width:1px
     classDef database fill:#f0f0f0,stroke:#666666,stroke-width:2px
-    classDef openai fill:#f0fff0,stroke:#006600,stroke-width:2px
+    classDef ai fill:#f0fff0,stroke:#006600,stroke-width:2px
     
     clients["Client Applications
     Web, Mobile, Desktop"]:::clients
     
-    proxy["Enterprise AI Governance Platform"]:::proxy
+    gateway["Enterprise AI Gateway"]:::gateway
     
     auth["Authentication & Authorization
     • JWT validation
     • Organization verification
-    • User identification"]:::proxyComponents
+    • User identification"]:::gatewayComponents
     
     keyMgmt["API Key Management
     • User-scoped keys
     • Organization-wide keys
-    • Encrypted storage"]:::proxyComponents
+    • Encrypted storage"]:::gatewayComponents
     
     reqProc["Request Processing
     • Session management
     • Usage tracking
     • Cost calculation
-    • Response streaming"]:::proxyComponents
+    • Response streaming"]:::gatewayComponents
     
     db["PostgreSQL Database
     • Organizations • API Keys
     • Users • Sessions
     • Requests • Usage Logs"]:::database
     
-    oai["OpenAI API"]:::openai
+    ai["AI Provider APIs"]:::ai
     
-    clients -- "HTTPS + JWT Auth" --> proxy
-    proxy --> auth
-    proxy --> keyMgmt
-    proxy --> reqProc
-    proxy --> db
-    db --> oai
+    clients -- "HTTPS + JWT Auth" --> gateway
+    gateway --> auth
+    gateway --> keyMgmt
+    gateway --> reqProc
+    gateway --> db
+    db --> ai
     
     %% Add relationship labels and styling
     linkStyle 0 stroke:#0066cc,stroke-width:2px
@@ -73,30 +104,26 @@ flowchart TD
 
 ## ✨ Features
 
-### Core Features
-
-- 🔐 **JWT Authentication**: Secure API access with organization-level JWT tokens
-- 🔑 **Dual API Key Scoping**: 
-  - **User-scoped keys**: Restrict API access to specific users
-  - **Organization-wide keys**: Shared access for all users in an organization
-- 👥 **Automatic User Management**: Users are created on-demand when they make their first request
-- 🧠 **Persona Management**: Create and manage system prompts with user-scoped access control
-- 🔍 **Conversation Analysis**: Analyze conversations for intent, sentiment, and custom classifications
-- 📊 **Comprehensive Usage Tracking**: Monitor token usage and costs per user, session, and organization
-- 📈 **Persona Analytics**: Track usage, performance, and costs of different personas
-- ⭐ **Response Rating**: Users can rate AI responses with feedback
+### For Developers
+- 🔐 **Simple JWT Authentication**: Secure API access without managing provider keys
+- 🌊 **Streaming Support**: Efficient handling of both streaming and non-streaming responses
 - 🌐 **Browser Compatible**: Full CORS support for web applications
-- 🚀 **Streaming Support**: Efficient handling of both streaming and non-streaming responses
+- 🔄 **Comprehensive Error Handling**: Graceful degradation and retry logic
 - 📝 **Session Management**: Group related requests for better tracking
-- 💰 **Real-time Cost Calculation**: Automatic cost calculation based on current model pricing
-- 🐳 **Docker Ready**: Production-ready Docker configuration
 
-### Security Features
+### For Operations Teams
+- 📊 **Real-time Analytics**: Monitor usage, costs, and performance metrics
+- 💰 **Cost Tracking**: Allocate AI spend by user, team, or project
+- 🔍 **Performance Monitoring**: Track response times and success rates
+- 📋 **Audit Trails**: Complete logs for compliance and troubleshooting
+- 🎯 **Intent Analysis**: Understand what users are asking for
 
-- 🔒 **Encrypted API Keys**: All OpenAI API keys are encrypted at rest using Fernet
-- 🛡️ **Organization Isolation**: Complete data isolation between organizations
-- 🔍 **Audit Trail**: Every request is logged with user attribution
-- 🚦 **Rate Limiting**: Built-in rate limiting support (extensible with Redis)
+### For Organizations
+- 🏢 **Multi-tenant Architecture**: Complete isolation between organizations
+- 👥 **User Management**: Automatic user creation and tracking
+- 🔑 **Flexible Access Control**: Organization-wide or user-specific permissions
+- ⭐ **Quality Tracking**: Monitor AI response effectiveness
+- 🧠 **Persona Management**: Control AI behavior across the organization
 
 ## 🚀 Quick Start
 
@@ -104,7 +131,7 @@ flowchart TD
 
 - Python 3.11+ or Docker
 - PostgreSQL 15+ (or use Docker)
-- An OpenAI API key
+- An AI provider API key
 
 ### Fastest Setup (Recommended)
 
@@ -119,7 +146,7 @@ This interactive script will:
 2. Generate secure encryption keys automatically
 3. Start PostgreSQL and API containers with Docker
 4. Walk you through creating your organization
-5. Help you add your OpenAI API key
+5. Help you add your AI provider API key
 6. Generate a JWT token for authentication
 7. Provide a ready-to-use curl command to test the API
 
@@ -129,8 +156,8 @@ If you prefer to set up manually:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/openai-inference-proxy.git
-cd openai-inference-proxy
+git clone https://github.com/yourusername/enterprise-ai-gateway.git
+cd enterprise-ai-gateway
 
 # Copy and configure environment
 cp .env.example .env
@@ -185,7 +212,7 @@ Accessible by any user in the organization:
 
 ```bash
 docker exec openai-proxy-api python scripts/manage_api_keys.py create-key \
-  <org-id> <openai-api-key> \
+  <org-id> <ai-provider-api-key> \
   --name "Shared Production Key"
 ```
 
@@ -198,7 +225,7 @@ USER_ID=$(docker exec openai-proxy-api python scripts/manage_users.py create-use
 
 # Then create a key for that user
 docker exec openai-proxy-api python scripts/manage_api_keys.py create-key \
-  <org-id> <openai-api-key> \
+  <org-id> <ai-provider-api-key> \
   --user-id $USER_ID \
   --name "Alice's Personal Key"
 ```
@@ -217,7 +244,7 @@ docker exec openai-proxy-api python scripts/manage_api_keys.py create-key \
 | `DATABASE_URL` | PostgreSQL connection string | Yes | - |
 | `JWT_SECRET_KEY` | Secret key for JWT signing (min 32 chars) | Yes | - |
 | `ENCRYPTION_KEY` | Fernet key for API key encryption | Yes | - |
-| `OPENAI_API_BASE_URL` | OpenAI API base URL | No | https://api.openai.com/v1 |
+| `OPENAI_API_BASE_URL` | AI provider API base URL | No | https://api.openai.com/v1 |
 | `CORS_ORIGINS` | Allowed CORS origins (comma-separated) | No | http://localhost:3000,http://localhost:8080 |
 | `LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | No | INFO |
 | `HOST` | Server host | No | 0.0.0.0 |
@@ -354,10 +381,10 @@ else:
 
 #### Maintaining Context Across Multiple Turns
 
-The OpenAI Responses API supports multi-turn conversations by using the `previous_response_id` field. This proxy passes this field directly to OpenAI, allowing your applications to maintain conversation context:
+The gateway supports multi-turn conversations by using the `previous_response_id` field:
 
 1. Send your initial request without a `previous_response_id`
-2. Extract the response ID from OpenAI's response (`response.id`)
+2. Extract the response ID from the response (`response.id`)
 3. For follow-up messages, include this ID as `previous_response_id`
 
 #### Example: Multi-turn Conversation
@@ -398,9 +425,9 @@ async function runConversation() {
 
 #### Important Notes
 
-- The proxy's session tracking (`X-Session-ID` header) is separate from conversation context and is used only for analytics.
-- The proxy doesn't automatically manage conversation history - your client application must handle saving and providing `previous_response_id`.
-- Response IDs are also stored in the proxy's database and can be retrieved with the request ID if needed.
+- The gateway's session tracking (`X-Session-ID` header) is separate from conversation context and is used only for analytics.
+- The gateway doesn't automatically manage conversation history - your client application must handle saving and providing `previous_response_id`.
+- Response IDs are also stored in the gateway's database and can be retrieved with the request ID if needed.
 
 ### Analyzing Conversations
 
@@ -576,7 +603,7 @@ curl -X POST http://localhost:8000/v1/responses/resp_xyz789/rate \
 ### Main Endpoints
 
 #### `POST /v1/responses`
-Proxy a request to OpenAI's Responses API.
+Gateway endpoint for AI API requests.
 
 **Headers:**
 - `Authorization: Bearer <jwt-token>` (required)
@@ -602,7 +629,7 @@ Proxy a request to OpenAI's Responses API.
 - `X-Session-ID`: Session identifier
 
 #### `GET /v1/responses/{response_id}`
-Retrieve a response from OpenAI by its ID.
+Retrieve a response by its ID.
 
 #### `POST /v1/responses/{id}/rate`
 Rate a response (accepts either request_id or response_id).
@@ -669,7 +696,7 @@ Get detailed analytics for a specific persona, including usage statistics, daily
 
 ### Utility Endpoints
 
-- `GET /health` - Health check with OpenAI connectivity test
+- `GET /health` - Health check with AI provider connectivity test
 - `GET /docs` - Interactive Swagger documentation
 - `GET /redoc` - ReDoc API documentation
 
@@ -716,13 +743,13 @@ docker exec openai-proxy-api python scripts/manage_users.py delete-user <user-id
 ```bash
 # Create organization-wide key
 docker exec openai-proxy-api python scripts/manage_api_keys.py create-key \
-  <org-id> <openai-api-key> \
+  <org-id> <ai-provider-api-key> \
   --name "Production Key" \
   --description "Shared key for all users"
 
 # Create user-specific key
 docker exec openai-proxy-api python scripts/manage_api_keys.py create-key \
-  <org-id> <openai-api-key> \
+  <org-id> <ai-provider-api-key> \
   --user-id <user-id> \
   --name "Alice's Key" \
   --description "Personal key for Alice"
@@ -775,7 +802,7 @@ ls dev-scripts/
 2. **Request Authentication**: Client includes JWT in Authorization header
 3. **User Identification**: X-User-ID header identifies the specific user
 4. **Key Resolution**: System finds appropriate API key (user-specific or org-wide)
-5. **Request Forwarding**: Proxy forwards to OpenAI with decrypted key
+5. **Request Forwarding**: Gateway forwards to AI provider with decrypted key
 
 ### API Key Precedence
 
@@ -803,7 +830,7 @@ This allows for:
 
 - **organizations**: Top-level entities that own all resources
 - **users**: Users within organizations (auto-created or manual)
-- **api_keys**: Encrypted OpenAI API keys with optional user scoping
+- **api_keys**: Encrypted AI provider API keys with optional user scoping
 - **sessions**: Groups related requests from the same user session
 - **requests**: Individual API requests with response tracking
 - **usage_logs**: Token usage and cost data for each request
@@ -891,8 +918,8 @@ erDiagram
 1. **Prepare Environment**
    ```bash
    # Clone repository
-   git clone https://github.com/yourusername/openai-inference-proxy.git
-   cd openai-inference-proxy
+   git clone https://github.com/yourusername/enterprise-ai-gateway.git
+   cd enterprise-ai-gateway
    
    # Configure environment
    cp .env.example .env
@@ -910,7 +937,7 @@ erDiagram
    ORG_ID=$(docker exec openai-proxy-api python scripts/manage_api_keys.py create-org "Your Company" | grep "ID:" | awk '{print $2}')
    
    # Add API key
-   docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_ID your-openai-key
+   docker exec openai-proxy-api python scripts/manage_api_keys.py create-key $ORG_ID your-ai-provider-key
    
    # Generate JWT
    docker exec openai-proxy-api python scripts/create_jwt.py --org-name "Your Company" --org-id $ORG_ID
@@ -965,131 +992,4 @@ docker logs openai-proxy-api
 # Connect to database
 docker exec -it openai-inference-proxy-db psql -U postgres -d openai_proxy
 
-# List active API keys for an org
-docker exec openai-proxy-api python scripts/manage_api_keys.py list-keys --org-id <org-id>
-
-# Verify JWT token
-# Use the /health endpoint with your token to test authentication
-```
-
-### Database Queries for Debugging
-
-```sql
--- Check organization's API keys
-SELECT ak.*, u.user_id as external_user_id 
-FROM api_keys ak 
-LEFT JOIN users u ON ak.user_id = u.id 
-WHERE ak.organization_id = 'your-org-id';
-
--- View recent requests
-SELECT r.*, u.user_id, s.session_id 
-FROM requests r 
-JOIN sessions s ON r.session_id = s.id 
-JOIN users u ON s.user_id = u.id 
-ORDER BY r.created_at DESC 
-LIMIT 10;
-
--- Check usage by user
-SELECT u.user_id, COUNT(r.id) as request_count, 
-       SUM(ul.total_tokens) as total_tokens,
-       SUM(ul.total_cost) as total_cost
-FROM users u
-JOIN sessions s ON u.id = s.user_id
-JOIN requests r ON s.id = r.session_id
-LEFT JOIN usage_logs ul ON r.id = ul.request_id
-GROUP BY u.id, u.user_id;
-```
-
-## 📈 Monitoring & Analytics
-
-### Health Monitoring
-
-The `/health` endpoint provides:
-- API availability status
-- OpenAI connectivity check
-- Response time metrics
-
-### Usage Analytics
-
-Track usage patterns with built-in logging:
-- Requests per user/organization
-- Token consumption by model
-- Cost analysis by time period
-- Response ratings and feedback
-
-### Example Analytics Queries
-
-```sql
--- Daily usage by organization
-SELECT 
-    DATE(r.created_at) as date,
-    o.name as organization,
-    COUNT(r.id) as requests,
-    SUM(ul.total_tokens) as tokens,
-    SUM(ul.total_cost) as cost
-FROM requests r
-JOIN sessions s ON r.session_id = s.id
-JOIN users u ON s.user_id = u.id
-JOIN organizations o ON u.organization_id = o.id
-LEFT JOIN usage_logs ul ON r.id = ul.request_id
-GROUP BY DATE(r.created_at), o.id, o.name
-ORDER BY date DESC;
-
--- User activity summary
-SELECT 
-    u.user_id,
-    COUNT(DISTINCT s.id) as sessions,
-    COUNT(r.id) as total_requests,
-    AVG(r.rating) as avg_rating,
-    SUM(ul.total_cost) as total_cost
-FROM users u
-LEFT JOIN sessions s ON u.id = s.user_id
-LEFT JOIN requests r ON s.id = r.session_id
-LEFT JOIN usage_logs ul ON r.id = ul.request_id
-GROUP BY u.id, u.user_id;
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
-1. Fork and clone the repository
-2. Create a virtual environment
-3. Install development dependencies:
-   ```bash
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt
-   ```
-4. Run tests:
-   ```bash
-   pytest tests/
-   ```
-5. Format code:
-   ```bash
-   black app/ scripts/ tests/
-   isort app/ scripts/ tests/
-   ```
-
-## 📄 License
-
-GNU Affero General Public License v3.0 (AGPL-3.0) - see [LICENSE](LICENSE) file for details.
-
-This software is licensed under the AGPL-3.0, which requires that all modified versions must be released under the same license. Additionally, if you run a modified version of this software on a server and allow users to interact with it, you must make the source code available to those users.
-
-For more information about the AGPL-3.0 license, visit: https://www.gnu.org/licenses/agpl-3.0.html
-
-## 🆘 Support
-
-- 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/amotivv-inc/enterprise-ai-governance/issues)
-- 💬 [Discussions](https://github.com/amotivv-inc/enterprise-ai-governance/discussions)
-- 📧 Email: ai@amotivv.com
-
-## 🙏 Acknowledgments
-
-- Built with [FastAPI](https://fastapi.tiangolo.com/)
-- Database ORM by [SQLAlchemy](https://www.sqlalchemy.org/)
-- Async HTTP with [httpx](https://www.python-httpx.org/)
-- Deployment with [Docker](https://www.docker.com/)
+# List active API keys for an

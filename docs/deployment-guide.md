@@ -1,6 +1,6 @@
-# OpenAI Inference Proxy: Deployment Guide
+# Enterprise AI Gateway: Deployment Guide
 
-This guide provides detailed instructions for deploying the OpenAI Inference Proxy on a remote server using Docker.
+This guide provides detailed instructions for deploying the Enterprise AI Gateway on a remote server using Docker.
 
 ## Table of Contents
 
@@ -14,11 +14,11 @@ This guide provides detailed instructions for deploying the OpenAI Inference Pro
 
 ## Prerequisites
 
-Before deploying the OpenAI Inference Proxy, ensure you have:
+Before deploying the Enterprise AI Gateway, ensure you have:
 
 - A server with Docker and Docker Compose installed
 - Git installed on the server
-- An OpenAI API key
+- An AI provider API key
 - Basic knowledge of Linux commands and Docker
 
 ## Server Setup
@@ -70,8 +70,8 @@ sudo ufw enable
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/openai-inference-proxy.git
-cd openai-inference-proxy
+git clone https://github.com/your-repo/enterprise-ai-gateway.git
+cd enterprise-ai-gateway
 ```
 
 ### 2. Configure Environment Variables
@@ -106,7 +106,7 @@ DATABASE_URL=postgresql+asyncpg://proxyuser:proxypass@postgres:5432/openai_proxy
 JWT_SECRET_KEY=your_generated_jwt_secret
 ENCRYPTION_KEY=your_generated_fernet_key
 
-# OpenAI Configuration
+# AI Provider Configuration
 OPENAI_API_BASE_URL=https://api.openai.com/v1
 
 # CORS Configuration
@@ -166,14 +166,14 @@ Save the organization ID for the next steps.
 python scripts/manage_users.py create-user <org-id> "user123"
 ```
 
-### 3. Add an OpenAI API Key
+### 3. Add an AI Provider API Key
 
 You can create API keys at two levels:
 
 #### Organization-Wide Key (Shared)
 ```bash
-# Add an organization-wide OpenAI API key
-python scripts/manage_api_keys.py create-key <org-id> <your-openai-key> --name "Production Key"
+# Add an organization-wide AI provider API key
+python scripts/manage_api_keys.py create-key <org-id> <your-ai-provider-key> --name "Production Key"
 ```
 
 #### User-Specific Key (For Audit Compliance)
@@ -182,7 +182,7 @@ python scripts/manage_api_keys.py create-key <org-id> <your-openai-key> --name "
 python scripts/manage_users.py create-user <org-id> "alice@example.com"
 
 # Then create a user-specific key
-python scripts/manage_api_keys.py create-key <org-id> <your-openai-key> --user-id <user-internal-id> --name "Alice's Key"
+python scripts/manage_api_keys.py create-key <org-id> <your-ai-provider-key> --user-id <user-internal-id> --name "Alice's Key"
 ```
 
 Save the synthetic key for API requests. The system will automatically select the appropriate key based on the user making the request.
@@ -204,7 +204,7 @@ Use the comprehensive test script to verify that all endpoints are working:
 # Run the test script (it will create its own test organization)
 python tests/openai_proxy_test.py
 
-# Or run with a custom OpenAI API key
+# Or run with a custom AI provider API key
 TEST_OPENAI_KEY="sk-your-test-key" python tests/openai_proxy_test.py
 ```
 
@@ -318,16 +318,16 @@ docker exec -it openai-proxy-api python scripts/create_jwt.py --org-name "Your O
 docker exec -it openai-proxy-api python scripts/manage_api_keys.py list-orgs
 ```
 
-#### OpenAI API Errors
+#### AI Provider API Errors
 
-If you're getting errors from the OpenAI API:
+If you're getting errors from the AI provider API:
 
 ```bash
 # Verify your API key is active
 docker exec -it openai-proxy-api python scripts/manage_api_keys.py list-keys
 
 # Create a new API key
-docker exec -it openai-proxy-api python scripts/manage_api_keys.py create-key <org-id> <new-openai-key> --name "New Key"
+docker exec -it openai-proxy-api python scripts/manage_api_keys.py create-key <org-id> <new-ai-provider-key> --name "New Key"
 ```
 
 For more detailed administration instructions, see the [Admin Guide](admin-guide.md).
